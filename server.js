@@ -7,7 +7,7 @@ const { seedDatabase } = require('./data/seed');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const SITE_ID = process.env.SITE_ID || 'default';
+const APP_APP_SITE_ID = process.env.APP_APP_SITE_ID || 'default';
 
 app.use(cors());
 app.use(express.json());
@@ -145,7 +145,7 @@ app.post('/api/match', async (req, res) => {
         bartender_name: bartender_name.trim(),
         answers: answers,
         tags: allTags,
-        site_id: SITE_ID
+        site_id: APP_SITE_ID
       }]);
 
     if (insertError) throw insertError;
@@ -205,7 +205,7 @@ app.post('/api/drinks', async (req, res) => {
         answers: answers || [],
         tags: tags || [],
         created_at: created_at || new Date().toISOString(),
-        site_id: SITE_ID
+        site_id: APP_SITE_ID
       }]);
 
     if (insertError) throw insertError;
@@ -250,7 +250,7 @@ app.get('/api/drink/:id', async (req, res) => {
       .from('drinks')
       .select('*')
       .eq('id', id)
-      .eq('site_id', SITE_ID)
+      .eq('site_id', APP_SITE_ID)
       .single();
 
     if (drinkError || !drink) {
@@ -308,7 +308,7 @@ app.get('/api/tavern/:token', async (req, res) => {
       .from('drinks')
       .select('*, drink_recipes(*)')
       .eq('owner_token', token)
-      .eq('site_id', SITE_ID)
+      .eq('site_id', APP_SITE_ID)
       .order('created_at', { ascending: false });
 
     if (dError) throw dError;
@@ -371,7 +371,7 @@ app.get('/api/tavern/:token/detail/:id', async (req, res) => {
       .select('*, drink_recipes(*)')
       .eq('id', id)
       .eq('owner_token', token)
-      .eq('site_id', SITE_ID)
+      .eq('site_id', APP_SITE_ID)
       .single();
 
     if (dError || !drink) {
@@ -423,7 +423,7 @@ app.all('/api/admin/purge', async (req, res) => {
     const { error } = await db
       .from('drinks')
       .delete()
-      .eq('site_id', SITE_ID)
+      .eq('site_id', APP_SITE_ID)
       .neq('owner_token', '_clear_all_records_');
 
     if (error) throw error;
