@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>动画预览 - 请高一点喝一杯</title>
+    <!-- Favicon / Logo -->
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="css/style.css?v=11">
+    <style>
+        .preview-page {
+            min-height: 100vh;
+            background: radial-gradient(ellipse at center, #1a1a1a 0%, #0d0d0d 100%);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .preview-header {
+            text-align: center;
+            padding: 30px 20px 20px;
+            border-bottom: 1px solid rgba(232, 184, 109, 0.2);
+        }
+
+        .preview-title-en {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 28px;
+            font-weight: 300;
+            letter-spacing: 6px;
+            background: linear-gradient(135deg, #e8b86d, #f0d089, #e8b86d);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 4px;
+        }
+
+        .preview-title-cn {
+            font-size: 14px;
+            color: #999;
+            letter-spacing: 8px;
+        }
+
+        .preview-body {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .drink-list-panel {
+            width: 280px;
+            border-right: 1px solid rgba(232, 184, 109, 0.15);
+            overflow-y: auto;
+            padding: 16px 0;
+        }
+
+        .drink-list-panel::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .drink-list-panel::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .drink-list-panel::-webkit-scrollbar-thumb {
+            background: rgba(232, 184, 109, 0.3);
+            border-radius: 2px;
+        }
+
+        .drink-list-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-left: 3px solid transparent;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .drink-list-item:hover {
+            background: rgba(232, 184, 109, 0.08);
+            border-left-color: rgba(232, 184, 109, 0.4);
+        }
+
+        .drink-list-item.active {
+            background: rgba(232, 184, 109, 0.12);
+            border-left-color: #e8b86d;
+        }
+
+        .drink-list-emoji {
+            font-size: 20px;
+            width: 28px;
+            text-align: center;
+        }
+
+        .drink-list-info {
+            flex: 1;
+        }
+
+        .drink-list-name {
+            font-size: 14px;
+            color: #f5f5f0;
+            margin-bottom: 2px;
+        }
+
+        .drink-list-type {
+            font-size: 11px;
+            color: #666;
+            font-family: 'Cormorant Garamond', serif;
+            letter-spacing: 1px;
+        }
+
+        .drink-list-index {
+            font-size: 11px;
+            color: #444;
+            font-family: 'Cormorant Garamond', serif;
+        }
+
+        .preview-stage-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+        }
+
+        .preview-drink-name-box {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .preview-drink-en {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 32px;
+            font-weight: 300;
+            letter-spacing: 4px;
+            background: linear-gradient(135deg, #e8b86d, #f0d089, #e8b86d);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 4px;
+        }
+
+        .preview-drink-cn {
+            font-size: 16px;
+            color: #999;
+            letter-spacing: 6px;
+        }
+
+        .preview-drink-type {
+            font-size: 12px;
+            color: #666;
+            font-family: 'Cormorant Garamond', serif;
+            letter-spacing: 2px;
+            margin-top: 4px;
+        }
+
+        .preview-glass-wrapper {
+            width: 260px;
+            height: 380px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+
+        .preview-glass-wrapper .drink-glass {
+            width: 200px;
+            height: 300px;
+        }
+
+        .preview-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .preview-btn {
+            padding: 10px 24px;
+            background: transparent;
+            border: 1px solid rgba(232, 184, 109, 0.4);
+            color: #e8b86d;
+            font-family: 'Noto Serif SC', serif;
+            font-size: 13px;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-radius: 2px;
+        }
+
+        .preview-btn:hover {
+            background: rgba(232, 184, 109, 0.15);
+            border-color: #e8b86d;
+        }
+
+        .preview-btn.primary {
+            background: linear-gradient(135deg, rgba(232, 184, 109, 0.2), rgba(240, 208, 137, 0.1));
+            border-color: #e8b86d;
+        }
+
+        .preview-btn.toggle.active {
+            background: rgba(232, 184, 109, 0.25);
+        }
+
+        .preview-info-panel {
+            width: 320px;
+            border-left: 1px solid rgba(232, 184, 109, 0.15);
+            overflow-y: auto;
+            padding: 24px 24px;
+        }
+
+        .preview-info-panel::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .preview-info-panel::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .preview-info-panel::-webkit-scrollbar-thumb {
+            background: rgba(232, 184, 109, 0.3);
+            border-radius: 2px;
+        }
+
+        .info-section {
+            margin-bottom: 28px;
+        }
+
+        .info-section-title {
+            font-size: 12px;
+            color: #666;
+            letter-spacing: 3px;
+            margin-bottom: 12px;
+            font-family: 'Cormorant Garamond', serif;
+            text-transform: uppercase;
+        }
+
+        .info-layers {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .info-layer-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 4px;
+        }
+
+        .info-layer-color {
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .info-layer-details {
+            flex: 1;
+        }
+
+        .info-layer-name {
+            font-size: 13px;
+            color: #f5f5f0;
+            margin-bottom: 2px;
+        }
+
+        .info-layer-meta {
+            font-size: 11px;
+            color: #666;
+        }
+
+        .info-story {
+            font-size: 13px;
+            line-height: 2;
+            color: #999;
+            white-space: pre-line;
+        }
+
+        .glass-tag {
+            display: inline-block;
+            padding: 4px 12px;
+            border: 1px solid rgba(232, 184, 109, 0.3);
+            border-radius: 20px;
+            font-size: 12px;
+            color: #e8b86d;
+            font-family: 'Cormorant Garamond', serif;
+            letter-spacing: 1px;
+        }
+
+        .back-link {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #666;
+            text-decoration: none;
+            font-size: 13px;
+            letter-spacing: 1px;
+            transition: color 0.3s;
+        }
+
+        .back-link:hover {
+            color: #e8b86d;
+        }
+
+        .mixing-title {
+            font-size: 14px;
+            color: #e8b86d;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+            text-align: center;
+            min-height: 20px;
+        }
+
+        @media (max-width: 1024px) {
+            .preview-body {
+                flex-direction: column;
+                overflow-y: auto;
+            }
+
+            .drink-list-panel {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid rgba(232, 184, 109, 0.15);
+                max-height: 200px;
+            }
+
+            .preview-info-panel {
+                width: 100%;
+                border-left: none;
+                border-top: 1px solid rgba(232, 184, 109, 0.15);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="preview-page">
+        <a href="index.html" class="back-link">← 返回首页</a>
+
+        <div class="preview-header">
+            <div class="preview-title-en">ANIMATION PREVIEW</div>
+            <div class="preview-title-cn">动 画 预 览 室</div>
+        </div>
+
+        <div class="preview-body">
+            <!-- 左侧酒列表 -->
+            <div class="drink-list-panel" id="drink-list">
+            </div>
+
+            <!-- 中间预览区 -->
+            <div class="preview-stage-panel">
+                <div class="preview-drink-name-box">
+                    <div class="preview-drink-en" id="preview-name-en">—</div>
+                    <div class="preview-drink-cn" id="preview-name-cn">—</div>
+                    <div class="preview-drink-type" id="preview-type">—</div>
+                </div>
+
+                <div class="mixing-title" id="preview-mixing-title">点击左侧任意酒品预览动画</div>
+
+                <div class="preview-glass-wrapper">
+                    <div class="drink-glass" id="preview-glass">
+                        <svg class="pencil-svg" id="preview-pencil-svg" viewBox="0 0 200 300" preserveAspectRatio="none">
+                            <defs>
+                                <clipPath id="preview-glass-clip">
+                                    <rect x="0" y="0" width="200" height="300" rx="20" ry="20"/>
+                                </clipPath>
+                                <filter id="preview-pencil-noise" x="0" y="0" width="100%" height="100%">
+                                    <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" result="noise"/>
+                                    <feDisplacementMap in="SourceGraphic" in2="noise" scale="2" xChannelSelector="R" yChannelSelector="G"/>
+                                </filter>
+                                <pattern id="preview-pencil-texture-1" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(72)">
+                                    <rect width="8" height="8" fill="transparent"/>
+                                    <line x1="0" y1="0" x2="0" y2="8" stroke="rgba(255,255,255,0.2)" stroke-width="2" stroke-linecap="round"/>
+                                    <line x1="4" y1="0" x2="4" y2="8" stroke="rgba(0,0,0,0.12)" stroke-width="1.5" stroke-linecap="round"/>
+                                    <line x1="2" y1="1" x2="2" y2="7" stroke="rgba(255,255,255,0.1)" stroke-width="1" stroke-linecap="round"/>
+                                    <line x1="6" y1="0.5" x2="6" y2="7.5" stroke="rgba(0,0,0,0.06)" stroke-width="1" stroke-linecap="round"/>
+                                </pattern>
+                                <pattern id="preview-pencil-texture-2" patternUnits="userSpaceOnUse" width="10" height="10" patternTransform="rotate(-68)">
+                                    <rect width="10" height="10" fill="transparent"/>
+                                    <line x1="0" y1="0" x2="0" y2="10" stroke="rgba(255,255,255,0.18)" stroke-width="2.5" stroke-linecap="round"/>
+                                    <line x1="5" y1="0" x2="5" y2="10" stroke="rgba(0,0,0,0.1)" stroke-width="2" stroke-linecap="round"/>
+                                    <line x1="2.5" y1="1" x2="2.5" y2="9" stroke="rgba(255,255,255,0.08)" stroke-width="1.5" stroke-linecap="round"/>
+                                    <line x1="7.5" y1="0.5" x2="7.5" y2="9.5" stroke="rgba(0,0,0,0.05)" stroke-width="1" stroke-linecap="round"/>
+                                </pattern>
+                            </defs>
+                            <g id="preview-pencil-layers-svg"></g>
+                        </svg>
+                        <div class="drink-liquid" id="preview-liquid"></div>
+                        <div class="ingredients-layer" id="preview-ingredients"></div>
+                        <div class="glass-shine"></div>
+                    </div>
+                </div>
+
+                <div class="preview-controls">
+                    <button class="preview-btn primary" id="btn-replay" onclick="replayAnimation()">
+                        ▶ 重播
+                    </button>
+                    <button class="preview-btn toggle" id="btn-autoplay" onclick="toggleAutoplay()">
+                        自动播放
+                    </button>
+                </div>
+            </div>
+
+            <!-- 右侧信息面板 -->
+            <div class="preview-info-panel">
+                <div class="info-section">
+                    <div class="info-section-title">Glass Type / 杯型</div>
+                    <span class="glass-tag" id="info-glass">—</span>
+                </div>
+
+                <div class="info-section">
+                    <div class="info-section-title">Layers / 分层</div>
+                    <div class="info-layers" id="info-layers">
+                    </div>
+                </div>
+
+                <div class="info-section">
+                    <div class="info-section-title">Alcohol / 酒精度</div>
+                    <p class="info-story" id="info-story">—</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/data.js?v=16"></script>
+    <script>
+        let currentRecipe = null;
+        let isAutoplay = false;
+        let autoplayIndex = 0;
+        let autoplayTimer = null;
+        let animationTimer = null;
+
+        function initDrinkList() {
+            const listEl = document.getElementById('drink-list');
+            listEl.innerHTML = '';
+
+            DRINK_RECIPES.forEach((recipe, index) => {
+                const anim = DRINK_ANIMATIONS[recipe.id];
+                const firstEmoji = anim && anim.pencilLayers && anim.pencilLayers[0]
+                    ? anim.pencilLayers[0].emoji
+                    : '🍸';
+
+                const item = document.createElement('div');
+                item.className = 'drink-list-item';
+                item.dataset.index = index;
+                item.onclick = () => selectDrink(index);
+                item.innerHTML = `
+                    <div class="drink-list-emoji">${firstEmoji}</div>
+                    <div class="drink-list-info">
+                        <div class="drink-list-name">${recipe.drink_name}</div>
+                        <div class="drink-list-type">${recipe.drink_type}</div>
+                    </div>
+                    <div class="drink-list-index">${String(index + 1).padStart(2, '0')}</div>
+                `;
+                listEl.appendChild(item);
+            });
+        }
+
+        function selectDrink(index) {
+            const recipe = DRINK_RECIPES[index];
+            currentRecipe = {
+                ...recipe,
+                animation_config: DRINK_ANIMATIONS[recipe.id]
+            };
+
+            document.querySelectorAll('.drink-list-item').forEach((item, i) => {
+                item.classList.toggle('active', i === index);
+            });
+
+            updateInfoPanel();
+            playPreviewAnimation();
+        }
+
+        function updateInfoPanel() {
+            const recipe = currentRecipe;
+            const anim = recipe.animation_config;
+
+            document.getElementById('preview-name-en').textContent = recipe.english_name;
+            document.getElementById('preview-name-cn').textContent = recipe.drink_name;
+            document.getElementById('preview-type').textContent = recipe.drink_type;
+
+            document.getElementById('info-glass').textContent = anim.glass;
+
+            const layersEl = document.getElementById('info-layers');
+            layersEl.innerHTML = '';
+
+            if (anim.pencilLayers) {
+                anim.pencilLayers.forEach((layer, i) => {
+                    const item = document.createElement('div');
+                    item.className = 'info-layer-item';
+                    item.innerHTML = `
+                        <div class="info-layer-color" style="background: ${layer.color}"></div>
+                        <div class="info-layer-details">
+                            <div class="info-layer-name">${layer.emoji || '🍸'} ${layer.name}</div>
+                            <div class="info-layer-meta">第 ${i + 1} 层 · 高度 ${layer.height}px · 延迟 ${layer.delay}ms</div>
+                        </div>
+                    `;
+                    layersEl.appendChild(item);
+                });
+            }
+
+            document.getElementById('info-story').textContent = recipe.story;
+        }
+
+        function playPreviewAnimation() {
+            if (animationTimer) {
+                clearTimeout(animationTimer);
+                animationTimer = null;
+            }
+
+            const glass = document.getElementById('preview-glass');
+            const liquid = document.getElementById('preview-liquid');
+            const pencilLayersSvg = document.getElementById('preview-pencil-layers-svg');
+            const ingredientsLayer = document.getElementById('preview-ingredients');
+            const titleEl = document.getElementById('preview-mixing-title');
+
+            const animConfig = currentRecipe.animation_config || {
+                glass: 'rocks',
+                liquidColor: 'linear-gradient(180deg, rgba(232, 184, 109, 0.6), rgba(201, 154, 79, 0.8))',
+                pencilLayers: [],
+                ingredients: []
+            };
+
+            // 立即赋予杯子选中款式的类名，避免初始闪现默认的巨型矩形杯子
+            glass.className = `drink-glass glass-${animConfig.glass}`;
+            
+            liquid.style.height = '0';
+            liquid.style.background = '';
+            if (pencilLayersSvg) pencilLayersSvg.innerHTML = '';
+            ingredientsLayer.innerHTML = '';
+
+            titleEl.textContent = '选一个合适的杯子…';
+
+            const glassFillRatios = {
+                wine: 0.85,
+                coupe: 0.85,
+                coupe_tall: 0.85,
+                margarita: 0.85,
+                cocktail: 0.85,
+                cocktail_tall: 0.85,
+                burgundy: 0.85
+            };
+            const fillRatio = glassFillRatios[animConfig.glass] || 1.0;
+
+            const baseInterval = 800;
+            const stirDelayAfterLayer2 = 600;
+            const shakeDelayAfterLayer3 = 700;
+            const shakeDuration = 1200;
+
+            setTimeout(() => {
+                titleEl.textContent = '选一个合适的杯子…';
+                titleEl.style.animation = 'none';
+                titleEl.offsetHeight;
+                titleEl.style.animation = 'fadeIn 0.5s ease forwards';
+            }, 100);
+
+            let lastLayerDelay = 1200;
+
+            if (animConfig.pencilLayers && animConfig.pencilLayers.length > 0 && pencilLayersSvg) {
+                const layers = animConfig.pencilLayers;
+
+                const layerDelays = [
+                    0,
+                    baseInterval,
+                    baseInterval * 2 + stirDelayAfterLayer2
+                ];
+
+                layers.forEach((layer, index) => {
+                    const delay = 1200 + (layerDelays[index] !== undefined ? layerDelays[index] : index * baseInterval);
+
+                    const timer = setTimeout(() => {
+                        let layerTop, layerBottom;
+
+                        const bottomOffset = 50;
+                        const sideOffset = 15;
+                        const topOffset = 10;
+                        
+                        if (layer.top !== undefined && layer.bottom !== undefined) {
+                            layerTop = layer.top - topOffset;
+                            layerBottom = layer.bottom + bottomOffset;
+                        } else {
+                            const layerHeight = (layer.height || 200) * fillRatio;
+                            layerTop = 300 - layerHeight - topOffset;
+                            layerBottom = 300 + bottomOffset;
+                        }
+                        
+                        let basePathD = `M ${-sideOffset} ${layerBottom} L ${-sideOffset} ${layerTop}`;
+                        const segments = 20;
+                        const segWidth = (200 + sideOffset * 2) / segments;
+                        
+                        for (let i = 0; i <= segments; i++) {
+                            const x = -sideOffset + i * segWidth;
+                            const yVariation = (Math.sin(i * 0.8 + index * 2) + Math.sin(i * 1.3 + index)) * 8;
+                            const y = layerTop + yVariation;
+                            basePathD += ` L ${x} ${y}`;
+                        }
+                        
+                        basePathD += ` L ${200 + sideOffset} ${layerBottom} Z`;
+                        
+                        let textureTop, textureBottom;
+                        if (index === 0) {
+                            textureBottom = 300 + bottomOffset;
+                            textureTop = 300 - (layers[0].height || 80) * fillRatio - topOffset;
+                        } else {
+                            textureBottom = 300 - (layers[index - 1].height || 80) * fillRatio;
+                            textureTop = 300 - (layer.height || 200) * fillRatio - topOffset;
+                        }
+
+                        let texturePathD = `M ${-sideOffset} ${textureBottom} L ${-sideOffset} ${textureTop}`;
+                        for (let i = 0; i <= segments; i++) {
+                            const x = -sideOffset + i * segWidth;
+                            const yVariation = (Math.sin(i * 0.8 + index * 2) + Math.sin(i * 1.3 + index)) * 6;
+                            const y = textureTop + yVariation;
+                            texturePathD += ` L ${x} ${y}`;
+                        }
+                        texturePathD += ` L ${200 + sideOffset} ${textureBottom} Z`;
+
+                        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                        g.setAttribute('class', 'pencil-layer-svg');
+                        g.setAttribute('data-layer', index);
+                        g.setAttribute('filter', 'url(#preview-pencil-noise)');
+
+                        const basePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        basePath.setAttribute('d', basePathD);
+                        basePath.setAttribute('fill', layer.color);
+                        basePath.setAttribute('opacity', '0.65');
+                        g.appendChild(basePath);
+
+                        const texturePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        texturePath.setAttribute('d', texturePathD);
+                        texturePath.setAttribute('fill', `url(#preview-pencil-texture-${(index % 2) + 1})`);
+                        texturePath.setAttribute('opacity', '0.6');
+                        g.appendChild(texturePath);
+
+                        pencilLayersSvg.appendChild(g);
+
+                        setTimeout(() => {
+                            g.classList.add('show');
+                        }, 50);
+
+                        const stepTexts = [
+                            `第一味是 ${layer.emoji || '🍸'} ${layer.name}…`,
+                            `再加一点 ${layer.emoji || '🍸'} ${layer.name}…`,
+                            `最后点缀 ${layer.emoji || '🍸'} ${layer.name}…`
+                        ];
+                        titleEl.textContent = stepTexts[index] || '调制中…';
+                        titleEl.style.animation = 'none';
+                        titleEl.offsetHeight;
+                        titleEl.style.animation = 'fadeIn 0.5s ease forwards';
+
+                        if (index === 1) {
+                            setTimeout(() => {
+                                const layers = pencilLayersSvg.querySelectorAll('.pencil-layer-svg');
+                                layers.forEach((layerEl, i) => {
+                                    setTimeout(() => {
+                                        layerEl.classList.add('stirring');
+                                    }, i * 150);
+                                });
+                            }, stirDelayAfterLayer2);
+                        }
+
+                        if (index === 2) {
+                            setTimeout(() => {
+                                glass.classList.add('shaking');
+                            }, shakeDelayAfterLayer3);
+                        }
+                    }, delay);
+                });
+
+                const totalDelay = 1200 + layerDelays[2] + shakeDelayAfterLayer3 + shakeDuration;
+                lastLayerDelay = totalDelay;
+            } else {
+                setTimeout(() => {
+                    liquid.style.background = animConfig.liquidColor;
+                    liquid.style.height = '65%';
+                    titleEl.textContent = '倒入基酒...';
+                    titleEl.style.animation = 'none';
+                    titleEl.offsetHeight;
+                    titleEl.style.animation = 'fadeIn 0.5s ease forwards';
+                }, 1200);
+                lastLayerDelay = 2200;
+            }
+
+            animationTimer = setTimeout(() => {
+                glass.classList.remove('shaking');
+                if (pencilLayersSvg) {
+                    const layers = pencilLayersSvg.querySelectorAll('.pencil-layer-svg');
+                    layers.forEach(layer => layer.classList.remove('stirring'));
+                }
+                titleEl.textContent = '高一点即将品鉴 ✔';
+                titleEl.style.animation = 'none';
+                titleEl.offsetHeight;
+                titleEl.style.animation = 'fadeIn 0.5s ease forwards';
+
+                if (isAutoplay) {
+                    autoplayTimer = setTimeout(() => {
+                        autoplayIndex = (autoplayIndex + 1) % DRINK_RECIPES.length;
+                        selectDrink(autoplayIndex);
+                    }, 1500);
+                }
+            }, lastLayerDelay);
+        }
+
+        function replayAnimation() {
+            if (currentRecipe) {
+                playPreviewAnimation();
+            }
+        }
+
+        function toggleAutoplay() {
+            isAutoplay = !isAutoplay;
+            const btn = document.getElementById('btn-autoplay');
+            btn.classList.toggle('active', isAutoplay);
+
+            if (isAutoplay) {
+                const currentIndex = DRINK_RECIPES.findIndex(r => r.id === currentRecipe?.id);
+                autoplayIndex = currentIndex >= 0 ? currentIndex : 0;
+                if (!currentRecipe) {
+                    selectDrink(0);
+                }
+            } else {
+                if (autoplayTimer) {
+                    clearTimeout(autoplayTimer);
+                    autoplayTimer = null;
+                }
+            }
+        }
+
+        function init() {
+            initDrinkList();
+            selectDrink(5);
+        }
+
+        init();
+    </script>
+</body>
+</html>

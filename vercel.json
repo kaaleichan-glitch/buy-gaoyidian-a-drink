@@ -1,0 +1,59 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "server.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "public/**/*",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "server.js"
+    },
+    {
+      "src": "/tavern.html",
+      "dest": "public/tavern.html"
+    },
+    {
+      "src": "/tavern",
+      "dest": "public/tavern.html"
+    },
+    {
+      "src": "/css/(.*)",
+      "dest": "public/css/$1"
+    },
+    {
+      "src": "/js/(.*)",
+      "dest": "public/js/$1"
+    },
+    {
+      "src": "/media/(.*)",
+      "dest": "public/media/$1"
+    },
+    {
+      "src": "/favicon.ico",
+      "dest": "public/favicon.ico"
+    },
+    {
+      "src": "/favicon.png",
+      "dest": "public/favicon.png"
+    },
+    {
+      "src": "/share-icon.png",
+      "dest": "public/share-icon.png"
+    },
+    {
+      "src": "/index.html",
+      "dest": "public/index.html"
+    },
+    {
+      "src": "/",
+      "dest": "public/index.html"
+    }
+  ]
+}

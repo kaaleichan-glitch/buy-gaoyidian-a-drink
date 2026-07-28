@@ -1,0 +1,10 @@
+node_modules/
+drinks.db
+drinks.db-journal
+drinks.db-wal
+drinks.db-shm
+.env
+*.ps1
+*.docx
+*.doc
+*.mp3

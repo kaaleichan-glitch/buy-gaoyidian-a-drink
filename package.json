@@ -1,0 +1,20 @@
+{
+  "name": "gaoyidian-cocktail",
+  "version": "1.0.0",
+  "description": "请高一点喝一杯 - 调酒小酒馆",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "reset-db": "node scripts/reset-db.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.44.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "serverless-http": "^3.2.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
