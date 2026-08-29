@@ -1,5 +1,5 @@
 const SUPABASE_URL = 'https://vftcjwgoyeqngcshnfyh.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_oi-yBynNTC2ftg4dwyVC9w_CnubnWDz';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmdGNqd2dveWVxbmdzY2huZnloIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAwMDE3NzQsImV4cCI6MjA2NTc3Nzc3NH0.rP0kf8QqIqNkXKf0n5m6rDgFh1mGfIh7Qf8BcJ2Z9L4pE6lD3oR5aYwXsT4uV2wN0bC5dF8gH0jK';
 
 const cloudState = {
     enabled: false,
@@ -70,7 +70,11 @@ async function cloudGet(tableName, params = {}) {
 }
 
 async function cloudCreate(tableName, data) {
-    if (!initCloud()) return null;
+    if (!initCloud()) {
+        const e = new Error('云端未初始化');
+        e.code = 'CLOUD_DISABLED';
+        throw e;
+    }
     
     try {
         const res = await fetch(`${SUPABASE_URL}/rest/v1/${tableName}`, {
@@ -83,11 +87,19 @@ async function cloudCreate(tableName, data) {
             const results = await res.json();
             return results[0] || data;
         }
-        console.warn('云端创建失败:', res.status, await res.text());
-        return null;
+        const body = await res.text();
+        console.warn('云端创建失败:', tableName, res.status, body);
+        const err = new Error(`云端创建 ${tableName} 失败: ${res.status} ${body.slice(0, 200)}`);
+        err.status = res.status;
+        err.body = body;
+        try { err.json = JSON.parse(body); } catch (_) {}
+        throw err;
     } catch (err) {
-        console.warn('云端创建失败:', err);
-        return null;
+        console.warn('云端创建失败:', tableName, err);
+        if (err && err.code) throw err;
+        const wrap = new Error(`云端创建 ${tableName} 失败: ${err && err.message ? err.message : err}`);
+        wrap.cause = err;
+        throw wrap;
     }
 }
 
@@ -140,18 +152,39 @@ async function getCloudRecipes() {
     }));
 }
 
-async function saveDrinkToCloud(drink) {
-    if (!initCloud()) return null;
-    
-    return await cloudCreate('drinks', {
-        drink_id: drink.id,
+async function saveDrinkToCloud(drink, opts = {}) {
+    if (!initCloud()) {
+        const e = new Error('云端未初始化，无法保存酒');
+        e.code = 'CLOUD_DISABLED';
+        throw e;
+    }
+    // 强制正确字段映射：
+    //   drink.id（前端十六进制字符串）→ 数据库列 drinks.drink_id
+    //   数据库列 drinks.id 是 BIGSERIAL 自增主键 → 不传
+    //   必带 site_id，默认 'default'
+    const payload = {
+        drink_id: drink.drink_id || drink.id,
         owner_token: drink.owner_token,
         recipe_id: drink.recipe_id,
-        bartender_name: drink.bartender_name,
-        answers: drink.answers,
-        tags: drink.tags,
-        created_at: drink.created_at
-    });
+        bartender_name: (drink.bartender_name || '').toString().trim(),
+        answers: drink.answers || [],
+        tags: drink.tags || [],
+        created_at: drink.created_at || new Date().toISOString(),
+        site_id: opts.site_id || drink.site_id || 'default'
+    };
+
+    if (!payload.drink_id) {
+        const e = new Error('缺少 drink_id，无法写入云端');
+        e.code = 'MISSING_DRINK_ID';
+        throw e;
+    }
+    if (!payload.owner_token || payload.recipe_id == null || !payload.bartender_name) {
+        const e = new Error('写入云端缺少必要字段：owner_token / recipe_id / bartender_name');
+        e.code = 'MISSING_REQUIRED';
+        throw e;
+    }
+
+    return await cloudCreate('drinks', payload);
 }
 
 async function getCloudDrinks(token) {
@@ -176,29 +209,43 @@ async function getCloudDrinks(token) {
     }));
 }
 
-async function syncLocalDrinksToCloud(token) {
-    if (!initCloud()) return false;
+async function syncLocalDrinksToCloud(token, opts = {}) {
+    if (!initCloud()) {
+        if (opts.verbose) console.warn('syncLocalDrinksToCloud: 云端未初始化，跳过');
+        return { ok: false, synced: 0, skipped: 0, failed: 0, errors: [], reason: 'CLOUD_DISABLED' };
+    }
     
     const localDrinks = JSON.parse(localStorage.getItem('gaoyidian_drinks') || '[]');
     const cloudDrinks = await getCloudDrinks(token);
     
-    if (!cloudDrinks) return false;
+    const result = { ok: true, synced: 0, skipped: 0, failed: 0, errors: [] };
+    if (!cloudDrinks) {
+        result.ok = false;
+        result.reason = 'GET_CLOUD_DRINKS_FAILED';
+        if (opts.verbose) console.warn('syncLocalDrinksToCloud: 拉取云端失败，无法做去重，跳过直写补同步');
+        return result;
+    }
     
     const cloudIds = new Set(cloudDrinks.map(d => d.id));
-    let synced = 0;
     
     for (const drink of localDrinks) {
-        if (drink.owner_token === token && !cloudIds.has(drink.id)) {
-            await saveDrinkToCloud(drink);
-            synced++;
+        try {
+            if (drink.owner_token !== token) { result.skipped++; continue; }
+            if (cloudIds.has(drink.id)) { result.skipped++; continue; }
+            await saveDrinkToCloud(drink, { site_id: opts.site_id || 'default' });
+            result.synced++;
+        } catch (err) {
+            result.failed++;
+            result.errors.push({ drink_id: drink.id || drink.drink_id, message: err && err.message ? err.message : String(err) });
+            if (opts.verbose) console.warn('补发本地酒失败:', drink.id || drink.drink_id, err);
         }
     }
     
-    if (synced > 0) {
-        console.log(`已同步 ${synced} 杯本地酒到云端`);
+    if (result.synced > 0 || opts.verbose) {
+        console.log(`本地 → 云端补同步完成：成功 ${result.synced} 杯，跳过 ${result.skipped} 杯，失败 ${result.failed} 杯`);
     }
     
-    return true;
+    return result;
 }
 
 async function mergeCloudDrinksToLocal(token) {

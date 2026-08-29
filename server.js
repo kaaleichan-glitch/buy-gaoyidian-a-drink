@@ -7,7 +7,7 @@ const { seedDatabase } = require('./data/seed');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const APP_APP_SITE_ID = process.env.APP_APP_SITE_ID || 'default';
+const APP_SITE_ID = process.env.APP_SITE_ID || process.env.APP_APP_SITE_ID || 'default';
 
 app.use(cors());
 app.use(express.json());
@@ -135,11 +135,11 @@ app.post('/api/match', async (req, res) => {
     const drinkId = generateId();
     const finalOwnerToken = owner_token || generateToken();
 
-    // 插入数据到 Supabase
+    // 插入数据到 Supabase：id 走 BIGSERIAL 自增，不手动传；drink_id 单独存业务 uuid
     const { error: insertError } = await db
       .from('drinks')
       .insert([{
-        id: drinkId,
+        drink_id: drinkId,
         owner_token: finalOwnerToken,
         recipe_id: matched.id,
         bartender_name: bartender_name.trim(),
@@ -178,27 +178,41 @@ app.post('/api/match', async (req, res) => {
 // 4. 保存手动调制结果 API
 app.post('/api/drinks', async (req, res) => {
   try {
-    const { id, owner_token, recipe_id, bartender_name, answers, tags, created_at } = req.body;
+    // 注意：body 里的 id 是前端生成的十六进制业务标识（uuid），对应数据库 drinks.drink_id 列，
+    // 而不是主键 drinks.id（bigint BIGSERIAL 自增，不再手动传）。
+    const {
+      id: bodyId,
+      drink_id: bodyDrinkId,
+      owner_token,
+      recipe_id,
+      bartender_name,
+      answers,
+      tags,
+      created_at
+    } = req.body;
+    const drinkId = bodyDrinkId || bodyId;
 
-    if (!id || !owner_token || !recipe_id || !bartender_name) {
+    if (!drinkId || !owner_token || !recipe_id || !bartender_name) {
       return res.status(400).json({ success: false, error: '缺少必要参数' });
     }
 
+    // 用 drink_id（业务标识）做唯一检查，避免同一杯酒重复写入
     const { data: existing, error: checkError } = await db
       .from('drinks')
-      .select('id')
-      .eq('id', id)
+      .select('drink_id')
+      .eq('drink_id', drinkId)
+      .eq('site_id', APP_SITE_ID)
       .maybeSingle();
 
     if (checkError) throw checkError;
     if (existing) {
-      return res.status(409).json({ success: false, error: '酒记录已存在' });
+      return res.status(409).json({ success: false, error: '酒记录已存在', drink_id: drinkId });
     }
 
     const { error: insertError } = await db
       .from('drinks')
       .insert([{
-        id,
+        drink_id: drinkId,
         owner_token,
         recipe_id,
         bartender_name: bartender_name.trim(),
@@ -222,7 +236,7 @@ app.post('/api/drinks', async (req, res) => {
     res.json({
       success: true,
       data: {
-        drink_id: id,
+        drink_id: drinkId,
         bartender_name: bartender_name.trim(),
         recipe: {
           id: recipe.id,
@@ -238,18 +252,25 @@ app.post('/api/drinks', async (req, res) => {
     });
   } catch (err) {
     console.error('保存失败:', err);
-    res.status(500).json({ success: false, error: err.message });
+    const code = err && (err.code || (err.details && err.details.code));
+    res.status(500).json({
+      success: false,
+      error: err.message || '写入数据库失败',
+      pg_code: code || null,
+      hint: code === '22P02' ? '字段类型不匹配' : (code === '23502' ? '缺少必填字段' : null)
+    });
   }
 });
 
 // 5. 获取某杯调配详情 API
+// 注：这里的 :id 按业务含义识别为 drink_id（十六进制字符串），不再对应 bigint 主键 id。
 app.get('/api/drink/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { data: drink, error: drinkError } = await db
       .from('drinks')
       .select('*')
-      .eq('id', id)
+      .eq('drink_id', id)
       .eq('site_id', APP_SITE_ID)
       .single();
 
@@ -325,7 +346,9 @@ app.get('/api/tavern/:token', async (req, res) => {
       if (collected) {
         return {
           recipe_id: r.id,
-          drink_id: collected.id,
+          // 优先使用 drink_id（业务唯一标识，十六进制字符串），
+          // 如果该行是小程序时代的老数据没有 drink_id，再回退使用 bigint 主键 id 的字符串形式兜底
+          drink_id: collected.drink_id || String(collected.id),
           bartender_name: collected.bartender_name,
           created_at: collected.created_at,
           drink_name: r.drink_name,

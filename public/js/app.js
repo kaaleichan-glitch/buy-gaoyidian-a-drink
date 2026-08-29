@@ -129,6 +129,35 @@ async function loadQuestions() {
         }
     }
     
+    // 启动时：先尝试自动补发旧的本地酒（之前 saveDrinkToCloud 都因为字段错误失败了）
+    // 走首选 /api/drinks（Netlify→Supabase 内网可通，比浏览器直连稳定得多）
+    // 异步执行，不阻塞页面
+    (async () => {
+        try {
+            const token = localStorage.getItem('gaoyidian_tavern_token');
+            const oldQueue = JSON.parse(localStorage.getItem(FAILED_DRINKS_KEY) || '[]');
+
+            // 1. 先尝试失败队列里积压的（如果有的话）
+            if (oldQueue.length) {
+                await retryFailedQueue();
+            }
+
+            // 2. 再做一次历史本地酒的补同步（只补 token 匹配的）
+            if (token && state.useBackend) {
+                const res = await syncLocalDrinksToCloud(token, { verbose: true, site_id: 'default' });
+                if (res && (res.synced > 0 || res.failed > 0)) {
+                    if (res.synced > 0 && res.failed === 0) {
+                        showToast(`已把之前 ${res.synced} 杯酒补发进云端酒馆 ✅`, '🍸');
+                    } else if (res.synced > 0 && res.failed > 0) {
+                        showToast(`${res.synced} 杯补发成功，${res.failed} 杯失败，下次打开再试`, '⚠️');
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('启动时自动补发失败：', e);
+        }
+    })();
+    
     const flavorQ = QUESTIONS.filter(q => q.category === '风味');
     const timeQ = QUESTIONS.filter(q => q.category === '时间地点');
     const toastQ = QUESTIONS.filter(q => q.category === '祝酒词');
@@ -174,8 +203,19 @@ function startQuiz() {
     state.currentQuestion = 0;
     state.answers = [];
 
+    // 优先级：URL ?token=  >  酒馆密令（localStorage）  >  默认 '高一点'
     const urlParams = new URLSearchParams(window.location.search);
-    state.ownerToken = urlParams.get('token') || '高一点';
+    const savedTavernToken = localStorage.getItem('gaoyidian_tavern_token');
+    const urlToken = urlParams.get('token');
+    state.ownerToken = urlToken || savedTavernToken || '高一点';
+
+    // 同步写回 localStorage，保证之后进酒馆页和当前 token 一致
+    if (!savedTavernToken) {
+        localStorage.setItem('gaoyidian_tavern_token', state.ownerToken);
+    } else if (urlToken && urlToken !== savedTavernToken) {
+        // 如果 URL 带了新 token，以 URL 为准并覆盖
+        localStorage.setItem('gaoyidian_tavern_token', urlToken);
+    }
 
     renderQuestion();
     showScreen('quiz-screen');
@@ -567,45 +607,48 @@ async function startMixing() {
         created_at: new Date().toISOString()
     };
 
-    if (state.useBackend) {
-        try {
-            const res = await fetch('/api/drinks', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(drinkRecord)
-            });
-            const data = await res.json();
-            if (data.success) {
-                resultData = {
-                    drink_id: data.data.drink_id,
-                    owner_token: ownerToken,
-                    recipe: data.data.recipe || matched,
-                    bartender_name: data.data.bartender_name,
-                    match_score: matched.score
-                };
-            }
-        } catch (err) {
-            console.warn('后端保存失败，使用本地存储');
-        }
-    }
-
-    if (!resultData) {
+    // 本地先保存一份（UI 无延迟、断网也不会丢），然后异步双路写入云端
+    {
         const drinks = JSON.parse(localStorage.getItem('gaoyidian_drinks') || '[]');
-        drinks.unshift(drinkRecord);
+        const idx = drinks.findIndex(d => (d.drink_id || d.id) === drinkId);
+        if (idx === -1) drinks.unshift(drinkRecord);
+        else drinks[idx] = drinkRecord;
         localStorage.setItem('gaoyidian_drinks', JSON.stringify(drinks));
-        
-        if (initCloud()) {
-            saveDrinkToCloud(drinkRecord);
-        }
-
-        resultData = {
-            drink_id: drinkId,
-            owner_token: ownerToken,
-            recipe: matched,
-            bartender_name: state.bartenderName.trim(),
-            match_score: matched.score
-        };
     }
+
+    // 首选走后端中转 /api/drinks（Netlify → Supabase 内网可通），失败再直连，两条都败则入失败队列
+    if (state.useBackend || initCloud()) {
+        saveDrinkWithRetry(drinkRecord)
+            .then(sr => {
+                if (sr.ok) {
+                    if (sr.via === 'api') showToast('已存入云端酒馆 ✅<br>换设备登录也能看到啦', '🍸');
+                    else showToast('已存入云端 ✅', '🍸');
+                } else {
+                    showToast('暂时存不到云端，已保留在本地<br>下次打开会自动重试', '⚠️');
+                    // 手动触发一下横幅显示（队列里有东西了）
+                    try {
+                        const pending = JSON.parse(localStorage.getItem(FAILED_DRINKS_KEY) || '[]');
+                        if (pending.length) showDrinkSyncBanner('failed', {
+                            total: pending.length,
+                            sample: (sr.error && sr.error.message) ? sr.error.message.slice(0, 16) : '网络'
+                        });
+                    } catch (_) {}
+                }
+            })
+            .catch(e => console.warn('saveDrinkWithRetry unhandled:', e));
+    }
+
+    // 先按本地逻辑构造 resultData（保证动画立刻播放，不依赖网络返回）
+    resultData = {
+        drink_id: drinkId,
+        owner_token: ownerToken,
+        recipe: matched,
+        bartender_name: state.bartenderName.trim(),
+        match_score: matched.score
+    };
+
+    // 注：如果云端 /api/drinks 返回的 recipe 有细微差异，也不影响 UI，
+    // 因为酒馆页 / 分享卡都会重新从后端或云端按 recipe_id 取配方。
 
     state.result = resultData;
     
@@ -780,6 +823,170 @@ function showToast(message, icon = '✨') {
         toast.classList.remove('show');
         setTimeout(() => toast.remove(), 400);
     }, 3800);
+}
+
+/* ========================= 云端写入：失败队列 + 自动补发 ========================= */
+const FAILED_DRINKS_KEY = 'gaoyidian_failed_drinks_queue';
+const SYNC_BANNER_ID = 'drink-sync-banner';
+
+function _safeLSGet(key, fallback) {
+    try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return fallback;
+        return JSON.parse(raw);
+    } catch (_) { return fallback; }
+}
+function _safeLSSet(key, val) {
+    try { localStorage.setItem(key, JSON.stringify(val)); return true; }
+    catch (_) { return false; }
+}
+
+// 把一杯写入失败的酒加入失败队列（会被下次页面加载自动重试）
+function enqueueFailedDrink(drinkRecord, errDetail) {
+    const q = _safeLSGet(FAILED_DRINKS_KEY, []);
+    const did = drinkRecord.drink_id || drinkRecord.id;
+    // 同一杯酒只保留最新一份
+    const filtered = q.filter(x => (x.drink && (x.drink.drink_id || x.drink.id)) !== did);
+    filtered.push({
+        drink: drinkRecord,
+        error: errDetail ? (errDetail.message || String(errDetail)) : 'unknown',
+        code: errDetail && errDetail.code ? errDetail.code : null,
+        pg_code: errDetail && errDetail.pg_code ? errDetail.pg_code : null,
+        first_failed_at: new Date().toISOString(),
+        last_failed_at: new Date().toISOString(),
+        attempts: 1
+    });
+    _safeLSSet(FAILED_DRINKS_KEY, filtered);
+    console.warn('[写入失败队列] 入队:', did, '队列长度:', filtered.length);
+}
+
+// 从失败队列中移除某杯酒（补发成功后）
+function dequeueSucceededDrink(drinkOrId) {
+    const did = (typeof drinkOrId === 'string' || typeof drinkOrId === 'number')
+        ? String(drinkOrId)
+        : String(drinkOrId.drink_id || drinkOrId.id);
+    const q = _safeLSGet(FAILED_DRINKS_KEY, []);
+    const next = q.filter(x => String(x.drink && (x.drink.drink_id || x.drink.id) || '') !== did);
+    if (next.length !== q.length) _safeLSSet(FAILED_DRINKS_KEY, next);
+    return q.length - next.length;
+}
+
+// 展示顶部横幅：告知用户有 N 杯酒在排队同步 / 同步失败
+function showDrinkSyncBanner(status, payload) {
+    let banner = document.getElementById(SYNC_BANNER_ID);
+    if (status === 'hidden') {
+        if (banner) banner.remove();
+        return;
+    }
+    if (!banner) {
+        banner = document.createElement('div');
+        banner.id = SYNC_BANNER_ID;
+        banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;padding:10px 16px;text-align:center;font-size:13px;line-height:1.5;backdrop-filter:blur(8px);';
+        document.body.appendChild(banner);
+    }
+    let bg = 'rgba(20,20,30,0.75)', color = '#fff', icon = '☁️', text = '';
+    if (status === 'syncing') { bg = 'rgba(28,100,180,0.85)'; icon = '🔄'; text = `正在把 ${payload.total} 杯酒同步到云端酒馆… 换设备也能看到啦`; }
+    else if (status === 'done')   { bg = 'rgba(30,130,80,0.85)';  icon = '✅'; text = `已成功同步 ${payload.ok} 杯酒到云端${payload.failed ? `（${payload.failed} 杯失败，点击横幅重试）` : ''}`; }
+    else if (status === 'failed') { bg = 'rgba(180,40,50,0.88)'; icon = '⚠️'; text = `有 ${payload.total} 杯酒暂时无法写入云端（${payload.sample || '网络'}），已保存到本地，点击这里立即重试`; }
+    
+    banner.style.background = bg;
+    banner.style.color = color;
+    banner.innerHTML = `<span style="margin-right:6px">${icon}</span><span>${text}</span>`;
+    banner.onclick = () => retryFailedQueue({ interactive: true });
+}
+
+// 尝试用 /api/drinks 写入（首选：Netlify 中转 → Supabase，避开手机到 supabase.co 的直连问题）
+async function saveDrinkViaApi(drinkRecord) {
+    const res = await fetch('/api/drinks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            // 传 drink_id 也传 id（老字段名兼容），server.js 会按 drink_id 优先入库
+            id: drinkRecord.id,
+            drink_id: drinkRecord.id,
+            owner_token: drinkRecord.owner_token,
+            recipe_id: drinkRecord.recipe_id,
+            bartender_name: drinkRecord.bartender_name,
+            answers: drinkRecord.answers,
+            tags: drinkRecord.tags,
+            created_at: drinkRecord.created_at
+        })
+    });
+    let payload = null;
+    const text = await res.text();
+    try { payload = JSON.parse(text); } catch (_) { payload = { raw: text }; }
+    if (res.ok && payload && payload.success) return payload;
+    const err = new Error(payload && payload.error ? payload.error : (text || 'POST /api/drinks failed'));
+    err.status = res.status;
+    err.code = payload && payload.code ? payload.code : 'API_ERROR';
+    err.pg_code = payload && payload.pg_code ? payload.pg_code : null;
+    throw err;
+}
+
+// 双路写入：先试 /api/drinks，失败立刻试 saveDrinkToCloud（直连），两条都败 → 入失败队列
+async function saveDrinkWithRetry(drinkRecord) {
+    let lastErr = null;
+    try {
+        const r = await saveDrinkViaApi(drinkRecord);
+        return { via: 'api', ok: true, response: r };
+    } catch (e) {
+        lastErr = e;
+        console.warn('首选写入失败（/api/drinks），回退到直连 Supabase：', e && e.message);
+    }
+    try {
+        if (!initCloud()) throw Object.assign(new Error('云端未初始化'), { code: 'CLOUD_DISABLED' });
+        const r = await saveDrinkToCloud(drinkRecord, { site_id: 'default' });
+        return { via: 'direct', ok: true, response: r };
+    } catch (e2) {
+        lastErr = e2;
+        console.warn('直连写入也失败：', e2 && e2.message);
+    }
+    // 两条都败：入队
+    enqueueFailedDrink(drinkRecord, lastErr);
+    return { via: 'queue', ok: false, error: lastErr };
+}
+
+// 后台自动重试失败队列
+async function retryFailedQueue(opts = {}) {
+    const q = _safeLSGet(FAILED_DRINKS_KEY, []);
+    if (!q || !q.length) { showDrinkSyncBanner('hidden'); return { total: 0, ok: 0, failed: 0 }; }
+
+    if (opts.interactive) showToast('开始重试同步酒记录…', '🔄');
+    showDrinkSyncBanner('syncing', { total: q.length });
+
+    let ok = 0, failed = 0, firstFailedMsg = '';
+    const remaining = [];
+    for (const item of q) {
+        const d = item.drink;
+        try {
+            const r = await saveDrinkViaApi(d);
+            // 成功则出队 + 同步到云端后，把本地 gaoyidian_drinks 与云端对齐（mergeCloudDrinksToLocal 会做）
+            dequeueSucceededDrink(d);
+            ok++;
+        } catch (e) {
+            failed++;
+            item.attempts = (item.attempts || 0) + 1;
+            item.last_failed_at = new Date().toISOString();
+            item.error = e && e.message ? e.message : String(e);
+            if (e && e.code) item.code = e.code;
+            if (e && e.pg_code) item.pg_code = e.pg_code;
+            remaining.push(item);
+            if (!firstFailedMsg) firstFailedMsg = (e && e.message) ? e.message.slice(0, 16) : '错误';
+        }
+    }
+    if (remaining.length) _safeLSSet(FAILED_DRINKS_KEY, remaining);
+
+    if (ok > 0 && failed === 0) {
+        showDrinkSyncBanner('done', { ok, failed: 0 });
+        setTimeout(() => showDrinkSyncBanner('hidden'), 6000);
+        showToast(`已同步 ${ok} 杯酒到云端酒馆 ✅`, '✅');
+    } else if (failed > 0) {
+        showDrinkSyncBanner('failed', { total: failed, sample: firstFailedMsg });
+        if (opts.interactive || failed >= 1) {
+            showToast(`${ok} 杯同步成功，${failed} 杯仍失败，已保留到本地，下次打开继续试`, '⚠️');
+        }
+    }
+    return { total: q.length, ok, failed };
 }
 
 function showWeChatShareGuide(title, firstStepMessage) {
