@@ -726,6 +726,13 @@ async function openDrinkDetail(drinkId) {
 
 function renderModal(drink) {
     const recipe = drink.recipe;
+    // 后端返回的 recipe 不包含 animation_config（仅纯字段），
+    // 液面微动动画依赖本地 DRINK_RECIPES 中的 animation_config 与 DRINK_ANIMATIONS，
+    // 因此用 recipe.id 去本地数据补回（如果能匹配到），保证液面 SVG + 微动动画始终可用
+    const localRecipe = recipe && recipe.id ? DRINK_RECIPES.find(r => r.id === recipe.id) : null;
+    if (localRecipe && localRecipe.animation_config) {
+        if (!recipe.animation_config) recipe.animation_config = localRecipe.animation_config;
+    }
     document.getElementById('modal-name-en').textContent = recipe.english_name;
     document.getElementById('modal-name-cn').textContent = recipe.drink_name;
     document.getElementById('modal-type').textContent = recipe.drink_type;
