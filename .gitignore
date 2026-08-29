@@ -8,3 +8,11 @@ drinks.db-shm
 *.docx
 *.doc
 *.mp3
+
+# --- 本地工具/临时文件 ---
+.skill/
+_fixinset.js
+# scripts/convert-data.js  # 放开这句就忽略脚本
+__MACOSX/
+.DS_Store
+*.zip
