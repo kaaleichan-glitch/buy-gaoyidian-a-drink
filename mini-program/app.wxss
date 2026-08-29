@@ -1,0 +1,3344 @@
+page {
+    --bg: #0d0d0d;
+    --bg-soft: #1a1a1a;
+    --bg-card: #222;
+    --text: #f5f5f0;
+    --text-dim: #999;
+    --accent: #e8b86d;
+    --accent-soft: #f0d089;
+    --accent-dark: #c99a4f;
+    --gold-grad: linear-gradient(135deg, #e8b86d, #f0d089, #e8b86d);
+}
+
+html, body {
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100svh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Serif SC', 'Cormorant Garamond', 'Georgia', 'Nimbus Roman No9 L', 'Songti SC', 'Noto Serif CJK SC', 'Source Han Serif SC', 'Source Han Serif CN', 'STSong', 'AR PL New Sung', 'SimSun', serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+}
+
+.screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    height: 100svh;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 20px;
+    transition: opacity 0.6s ease;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch; /* Momentum scrolling for iOS */
+}
+
+.screen.active {
+    display: flex;
+}
+
+/* Centering wrapper that allows safe scrolling on overflows (preventing flex chop-off on top) */
+.home-container, .quiz-container, .mixing-container, .result-container, .tavern-container {
+    margin: auto 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.screen.fade-out {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* ========== 首页 ========== */
+#home-screen {
+    background: radial-gradient(ellipse at center, #1a1a1a 0%, #0d0d0d 100%);
+}
+
+.home-container {
+    text-align: center;
+    max-width: 500px;
+    width: 100%;
+}
+
+.logo-en {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 48px;
+    font-weight: 300;
+    letter-spacing: 6px;
+    margin-bottom: 8px;
+    background: var(--gold-grad);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: fadeInDown 1s ease;
+}
+
+.logo-cn {
+    font-size: 22px;
+    font-weight: 300;
+    letter-spacing: 12px;
+    color: var(--text-dim);
+    margin-bottom: 48px;
+    animation: fadeInDown 1s ease 0.2s both;
+}
+
+.intro-text {
+    font-size: 14px;
+    line-height: 2;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+    letter-spacing: 2px;
+    animation: fadeIn 1.5s ease 0.4s both;
+}
+
+.intro-text .highlight {
+    color: var(--accent);
+}
+
+.name-input-wrapper {
+    margin: 48px 0 32px;
+    animation: fadeInUp 1s ease 0.5s both;
+}
+
+.name-label {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 12px;
+    letter-spacing: 4px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: block;
+}
+
+.name-input {
+    width: 100%;
+    max-width: 300px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #444;
+    color: var(--text);
+    font-size: 18px;
+    font-family: inherit;
+    padding: 12px 4px;
+    text-align: center;
+    letter-spacing: 4px;
+    outline: none;
+    transition: border-color 0.3s ease;
+}
+
+.name-input:focus {
+    border-bottom-color: var(--accent);
+}
+
+.name-input::placeholder {
+    color: #444;
+    letter-spacing: 2px;
+}
+
+.start-btn {
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 16px;
+    letter-spacing: 8px;
+    padding: 16px 48px;
+    cursor: pointer;
+    transition: all 0.4s ease;
+    position: relative;
+    overflow: hidden;
+    animation: fadeInUp 1s ease 0.7s both;
+}
+
+.start-btn:hover {
+    background: var(--accent);
+    color: var(--bg);
+    letter-spacing: 12px;
+}
+
+.start-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.hint {
+    margin-top: 40px;
+    font-size: 12px;
+    color: #555;
+    letter-spacing: 2px;
+    animation: fadeIn 2s ease 1s both;
+}
+
+.tavern-entry {
+    margin-top: 32px;
+    animation: fadeIn 2s ease 1.2s both;
+}
+
+.tavern-link {
+    font-size: 13px;
+    color: var(--text-dim);
+    text-decoration: none;
+    letter-spacing: 2px;
+    transition: color 0.3s ease;
+}
+
+.tavern-link:hover {
+    color: var(--accent);
+}
+
+/* ========== 问答页 ========== */
+#quiz-screen {
+    background: radial-gradient(ellipse at center, #1a1a1a 0%, #0d0d0d 100%);
+}
+
+.quiz-container {
+    max-width: 500px;
+    width: 100%;
+    text-align: center;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 2px;
+    background: #2a2a2a;
+    margin-bottom: 60px;
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--gold-grad);
+    transition: width 0.5s ease;
+}
+
+.question-number {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 14px;
+    letter-spacing: 6px;
+    color: var(--text-dim);
+    margin-bottom: 24px;
+    text-transform: uppercase;
+}
+
+.question-text {
+    font-size: 22px;
+    font-weight: 300;
+    line-height: 1.8;
+    letter-spacing: 2px;
+    margin-bottom: 48px;
+    color: var(--text);
+}
+
+.options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.question-footer {
+    margin-top: 24px;
+    text-align: center;
+}
+
+.random-btn {
+    background: transparent;
+    border: 1px solid #333;
+    color: #888;
+    font-size: 13px;
+    font-family: inherit;
+    padding: 8px 20px;
+    cursor: pointer;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+    letter-spacing: 1px;
+}
+
+.random-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(232, 184, 109, 0.05);
+}
+
+.option-btn {
+    width: 100%;
+    background: transparent;
+    border: 1px solid #333;
+    color: var(--text);
+    font-size: 15px;
+    font-family: inherit;
+    padding: 18px 24px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: left;
+    letter-spacing: 1px;
+    line-height: 1.6;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-radius: 8px;
+}
+
+.option-btn::before {
+    content: '○';
+    color: #666;
+    font-size: 18px;
+    flex-shrink: 0;
+    width: 24px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+
+.option-btn:active,
+.option-btn.selected {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(232, 184, 109, 0.05);
+}
+
+.option-btn:active::before,
+.option-btn.selected::before {
+    color: var(--accent);
+    content: '◉';
+}
+
+.question-title {
+    font-size: 16px;
+    color: var(--accent);
+    margin-bottom: 12px;
+    letter-spacing: 3px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ========== 调酒动画页 ========== */
+#mixing-screen {
+    background: radial-gradient(ellipse at center, #1a1a1a 0%, #0d0d0d 100%);
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0;
+}
+
+.mixing-container {
+    text-align: center;
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px 60px;
+    flex-shrink: 0;
+}
+
+.mixing-result-header {
+    margin-bottom: 30px;
+    animation: fadeInUp 0.8s ease forwards;
+}
+
+.mixing-card-details {
+    width: 100%;
+    max-width: 560px;
+    margin-top: 10px;
+    animation: fadeInUp 0.8s ease 0.3s backwards;
+}
+
+.mixing-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px;
+    letter-spacing: 8px;
+    color: var(--text-dim);
+    margin-bottom: 40px;
+    text-transform: uppercase;
+    animation: fadeIn 1s ease;
+}
+
+.drink-stage {
+    position: relative;
+    width: 200px;
+    height: 280px;
+    margin: 0 auto 40px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.drink-glass {
+    position: relative;
+    width: 160px;
+    height: 220px;
+    border: 2px solid rgba(232, 184, 109, 0.25);
+    border-top: none;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.02);
+    transition: all 0.5s ease;
+    animation: glassAppear 0.8s ease;
+}
+
+.drink-glass.glass-cocktail {
+    width: 140px;
+    height: 160px;
+    border-radius: 0 0 70px 70px / 0 0 30px 30px;
+    clip-path: polygon(0 0, 100% 0, 85% 100%, 15% 100%);
+    border: none;
+    background: linear-gradient(180deg, rgba(232,184,109,0.05) 0%, rgba(232,184,109,0.1) 100%);
+}
+
+.drink-glass.glass-rocks {
+    width: 140px;
+    height: 120px;
+    border-radius: 8px 8px 12px 12px;
+}
+
+.drink-glass.glass-highball {
+    width: 120px;
+    height: 200px;
+    border-radius: 6px 6px 10px 10px;
+}
+
+.drink-glass.glass-collins {
+    width: 100px;
+    height: 220px;
+    border-radius: 4px 4px 8px 8px;
+}
+
+.drink-glass.glass-wine {
+    width: 154px;
+    height: 220px;
+    border-radius: 50% 50% 45% 45% / 60% 60% 40% 40%;
+    border: none;
+    background: radial-gradient(ellipse at center, rgba(232,184,109,0.08) 0%, transparent 70%);
+}
+
+.drink-glass.glass-coupe {
+    width: 176px;
+    height: 143px;
+    border-radius: 50% 50% 45% 45% / 70% 70% 30% 30%;
+    border: none;
+    background: radial-gradient(ellipse at 50% 70%, rgba(232,184,109,0.1) 0%, transparent 70%);
+}
+
+.drink-glass.glass-flute {
+    width: 80px;
+    height: 200px;
+    border-radius: 40px 40px 4px 4px / 80px 80px 4px 4px;
+}
+
+.drink-glass.glass-mug {
+    width: 150px;
+    height: 160px;
+    border-radius: 10px;
+}
+
+.drink-glass.glass-tumbler {
+    width: 130px;
+    height: 150px;
+    border-radius: 6px;
+}
+
+.drink-glass.glass-sake {
+    width: 90px;
+    height: 80px;
+    border-radius: 45px 45px 10px 10px;
+}
+
+.drink-glass.glass-bulb {
+    width: 120px;
+    height: 180px;
+    border-radius: 60px 60px 20px 20px;
+}
+
+.drink-glass.glass-latte {
+    width: 140px;
+    height: 130px;
+    border-radius: 0 0 70px 70px / 0 0 35px 35px;
+}
+
+.drink-glass.glass-burgundy {
+    width: 160px;
+    height: 180px;
+    border-radius: 50% 50% 45% 45% / 55% 55% 45% 45%;
+    border: none;
+    background: radial-gradient(ellipse at center, rgba(232,184,109,0.08) 0%, transparent 70%);
+}
+
+.drink-glass.glass-tea_glass {
+    width: 120px;
+    height: 140px;
+    border-radius: 4px 4px 60px 60px / 4px 4px 20px 20px;
+}
+
+.drink-glass.glass-ceramic {
+    width: 130px;
+    height: 110px;
+    border-radius: 8px;
+    border-color: rgba(139, 90, 43, 0.4);
+    background: rgba(139, 90, 43, 0.1);
+}
+
+.drink-glass.glass-dessert {
+    width: 130px;
+    height: 180px;
+    border-radius: 0 0 65px 65px / 0 0 25px 25px;
+}
+
+.drink-glass.glass-dessert .pencil-svg {
+    width: 104%;
+    height: 104%;
+    left: -2%;
+    top: -2%;
+}
+
+.drink-glass.glass-margarita {
+    width: 160px;
+    height: 150px;
+    border-radius: 50% 50% 10% 10% / 80% 80% 10% 10%;
+    border: none;
+    background: radial-gradient(ellipse at 50% 80%, rgba(232,184,109,0.08) 0%, transparent 70%);
+}
+
+.drink-glass.glass-tiki {
+    width: 130px;
+    height: 200px;
+    border-radius: 20px 20px 30px 30px / 15px 15px 40px 40px;
+}
+
+.drink-glass.glass-hurricane {
+    width: 120px;
+    height: 220px;
+    border-radius: 60px 60px 10px 10px / 50% 50% 5% 5%;
+}
+
+.drink-glass.glass-pint {
+    width: 130px;
+    height: 180px;
+    border-radius: 4px;
+}
+
+.drink-glass.glass-irish {
+    width: 120px;
+    height: 160px;
+    border-radius: 0 0 60px 60px / 0 0 20px 20px;
+}
+
+.drink-glass.glass-old_fashioned,
+.drink-glass.glass-old_fashioned2 {
+    width: 150px;
+    height: 110px;
+    border-radius: 8px;
+}
+
+.drink-glass.glass-rocks_tall {
+    width: 120px;
+    height: 180px;
+    border-radius: 8px;
+}
+
+.drink-glass.glass-cocktail_tall {
+    width: 130px;
+    height: 180px;
+    border-radius: 0 0 65px 65px / 0 0 25px 25px;
+    clip-path: polygon(0 0, 100% 0, 88% 100%, 12% 100%);
+    border: none;
+    background: linear-gradient(180deg, rgba(232,184,109,0.05) 0%, rgba(232,184,109,0.1) 100%);
+}
+
+.drink-glass.glass-coupe_tall {
+    width: 165px;
+    height: 176px;
+    border-radius: 50% 50% 45% 45% / 65% 65% 35% 35%;
+    border: none;
+    background: radial-gradient(ellipse at 50% 65%, rgba(232,184,109,0.08) 0%, transparent 70%);
+}
+
+.drink-glass.glass-gaiwan {
+    width: 140px;
+    height: 90px;
+    border-radius: 50% 50% 10% 10% / 60% 60% 10% 10%;
+}
+
+.drink-glass.glass-zisha {
+    width: 130px;
+    height: 100px;
+    border-radius: 6px;
+    border-color: rgba(101, 67, 33, 0.5);
+    background: rgba(101, 67, 33, 0.15);
+}
+
+.drink-glass.glass-lotus {
+    width: 140px;
+    height: 100px;
+    border-radius: 50% 50% 20% 20% / 60% 60% 20% 20%;
+}
+
+.drink-glass.glass-lotus .pencil-svg {
+    width: 104%;
+    height: 104%;
+    left: -2%;
+    top: -2%;
+}
+
+.drink-glass.glass-tequila {
+    width: 70px;
+    height: 110px;
+    border-radius: 0 0 35px 35px / 0 0 15px 15px;
+}
+
+.drink-glass.glass-milkshake {
+    width: 120px;
+    height: 200px;
+    border-radius: 60px 60px 8px 8px / 50% 50% 4px 4px;
+}
+
+.pencil-svg {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 3;
+    overflow: hidden;
+}
+
+.pencil-layer-svg {
+    opacity: 0;
+    transition: opacity 0.8s ease;
+}
+
+.pencil-layer-svg.show {
+    opacity: 0.9;
+}
+
+.ritual-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 6;
+}
+
+.ice-cube {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(200,230,255,0.7) 50%, rgba(150,200,255,0.5) 100%);
+    border-radius: 4px;
+    opacity: 0;
+    }
+
+@keyframes iceDrop {
+    0% {
+        opacity: 0;
+        transform: translateY(-100px) rotate(0deg);
+    }
+    20% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0.8;
+        transform: translateY(60px) rotate(45deg);
+    }
+}
+
+.ice-cube.dropping {
+    animation: iceDrop 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.stir-stick {
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    width: 4px;
+    height: 120px;
+    background: linear-gradient(180deg, #d4a574 0%, #c4956a 50%, #b08050 100%);
+    border-radius: 2px;
+    transform-origin: top center;
+    opacity: 0;
+    z-index: 10;
+}
+
+.stir-stick::after {
+    content: '';
+    position: absolute;
+    bottom: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 20px;
+    background: radial-gradient(circle, rgba(255,255,255,0.6) 0%, rgba(200,200,200,0.3) 100%);
+    border-radius: 50%;
+    opacity: 0.7;
+}
+
+@keyframes stirIn {
+    0% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-50px) rotate(0deg);
+    }
+    30% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0) rotate(0deg);
+    }
+}
+
+@keyframes stirSpin {
+    0% {
+        transform: translateX(-50%) rotate(-15deg);
+    }
+    25% {
+        transform: translateX(-50%) rotate(10deg);
+    }
+    50% {
+        transform: translateX(-50%) rotate(-8deg);
+    }
+    75% {
+        transform: translateX(-50%) rotate(12deg);
+    }
+    100% {
+        transform: translateX(-50%) rotate(0deg);
+    }
+}
+
+.stir-stick.entering {
+    animation: stirIn 0.6s ease forwards;
+}
+
+.stir-stick.stirring {
+    animation: stirSpin 1.5s ease-in-out 2;
+}
+
+.drink-glass.shaking {
+    animation: shakeGlass 0.3s ease-in-out infinite;
+}
+
+@keyframes shakeGlass {
+    0%, 100% {
+        transform: translateX(0) rotate(0deg);
+    }
+    20% {
+        transform: translateX(-6px) rotate(-2deg);
+    }
+    40% {
+        transform: translateX(5px) rotate(1.5deg);
+    }
+    60% {
+        transform: translateX(-4px) rotate(-1deg);
+    }
+    80% {
+        transform: translateX(3px) rotate(1deg);
+    }
+}
+
+.pencil-layer-svg.stirring {
+    animation: liquidStir 2s ease-in-out infinite;
+}
+
+.pencil-layer-svg.stirring:nth-child(1) {
+    animation-delay: 0s;
+}
+
+.pencil-layer-svg.stirring:nth-child(2) {
+    animation-delay: 0.3s;
+}
+
+.pencil-layer-svg.stirring:nth-child(3) {
+    animation-delay: 0.6s;
+}
+
+@keyframes liquidStir {
+    0%, 100% {
+        transform: translateY(0) scaleY(1);
+    }
+    25% {
+        transform: translateY(-8px) scaleY(1.05);
+    }
+    50% {
+        transform: translateY(4px) scaleY(0.97);
+    }
+    75% {
+        transform: translateY(-5px) scaleY(1.03);
+    }
+}
+
+.fireworks-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 20;
+}
+
+.firework {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    opacity: 0;
+}
+
+@keyframes fireworkBurst {
+    0% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(0);
+    }
+}
+
+.firework.burst {
+    animation: fireworkBurst 1s ease-out forwards;
+}
+
+.drink-liquid {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 0;
+    background: linear-gradient(180deg, rgba(232, 184, 109, 0.6), rgba(201, 154, 79, 0.8));
+    transition: height 2.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    animation: liquidWave 4s ease-in-out infinite;
+}
+
+.glass-shine {
+    position: absolute;
+    top: 10%;
+    left: 15%;
+    width: 3px;
+    height: 60%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.2), transparent);
+    border-radius: 2px;
+    pointer-events: none;
+}
+
+.drink-glass.glass-wine .glass-shine {
+    top: 25%;
+    height: 40%;
+}
+
+.drink-glass.glass-coupe .glass-shine {
+    top: 30%;
+    height: 35%;
+}
+
+.drink-glass.glass-coupe_tall .glass-shine {
+    top: 28%;
+    height: 38%;
+}
+
+.drink-glass.glass-margarita .glass-shine {
+    top: 28%;
+    height: 35%;
+}
+
+.drink-glass.glass-cocktail .glass-shine {
+    top: 22%;
+    height: 40%;
+}
+
+.drink-glass.glass-cocktail_tall .glass-shine {
+    top: 20%;
+    height: 45%;
+}
+
+.drink-glass.glass-burgundy .glass-shine {
+    top: 22%;
+    height: 42%;
+}
+
+.ingredients-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 10;
+}
+
+.drink-ingredient {
+    position: absolute;
+    font-size: 20px;
+    opacity: 0;
+    z-index: 5;
+    border: none !important;
+    padding: 0 !important;
+    line-height: 1;
+    pointer-events: none;
+}
+
+.drink-ingredient.pencil-leaf {
+    width: 30px;
+    height: 18px;
+    background: linear-gradient(135deg, #a5d6a7 0%, #81c784 25%, #66bb6a 50%, #4caf50 75%, #388e3c 100%);
+    border-radius: 0 100% 0 100%;
+    transform: rotate(-20deg);
+    filter: blur(0.3px);
+}
+
+.drink-ingredient.pencil-leaf::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 3px;
+    width: 24px;
+    height: 1.5px;
+    background: rgba(27, 94, 32, 0.4);
+    transform: translateY(-50%);
+    filter: blur(0.2px);
+}
+
+.drink-ingredient.pencil-leaf::after {
+    content: '';
+    position: absolute;
+    top: 30%;
+    left: 8px;
+    width: 12px;
+    height: 1px;
+    background: rgba(27, 94, 32, 0.25);
+    transform: translateY(-50%) rotate(20deg);
+    filter: blur(0.2px);
+}
+
+.drink-ingredient.pencil-pineapple {
+    width: 26px;
+    height: 22px;
+    background: 
+        radial-gradient(ellipse at 25% 25%, rgba(255,255,255,0.4) 0%, transparent 45%),
+        linear-gradient(145deg, #fff59d 0%, #ffee58 15%, #ffd54f 35%, #ffb300 60%, #ff8f00 85%, #f57c00 100%);
+    border-radius: 30% 70% 60% 40% / 40% 50% 50% 60%;
+    transform: rotate(10deg);
+    position: relative;
+    filter: blur(0.25px);
+}
+
+.drink-ingredient.pencil-pineapple::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 45%;
+    transform: translateX(-50%) rotate(-10deg);
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 10px solid #43a047;
+    filter: drop-shadow(0 -1px 1px rgba(27, 94, 32, 0.3)) blur(0.2px);
+}
+
+.drink-ingredient.pencil-pineapple::after {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: 18px;
+    height: 14px;
+    background: 
+        repeating-linear-gradient(
+            50deg,
+            transparent,
+            transparent 2.5px,
+            rgba(239, 108, 0, 0.18) 2.5px,
+            rgba(239, 108, 0, 0.18) 3.5px
+        ),
+        repeating-linear-gradient(
+            -40deg,
+            transparent,
+            transparent 2.5px,
+            rgba(239, 108, 0, 0.12) 2.5px,
+            rgba(239, 108, 0, 0.12) 3.5px
+        );
+    border-radius: 40%;
+    opacity: 0.6;
+}
+
+.drink-ingredient.pencil-cherry {
+    width: 20px;
+    height: 20px;
+    background: 
+        radial-gradient(circle at 35% 35%, rgba(255,205,210,0.5) 0%, transparent 40%),
+        radial-gradient(circle at 30% 30%, #ef5350 0%, #e53935 35%, #c62828 70%, #b71c1c 100%);
+    border-radius: 50%;
+    position: relative;
+    filter: blur(0.3px);
+}
+
+.drink-ingredient.pencil-cherry::before {
+    content: '';
+    position: absolute;
+    top: -9px;
+    left: 50%;
+    width: 1.5px;
+    height: 11px;
+    background: linear-gradient(180deg, #7cb342, #558b2f);
+    transform: translateX(-50%) rotate(20deg);
+    border-radius: 1px;
+    filter: blur(0.2px);
+}
+
+.drink-ingredient.pencil-cherry::after {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: 55%;
+    width: 9px;
+    height: 5px;
+    background: linear-gradient(135deg, #81c784, #66bb6a);
+    border-radius: 0 100% 0 100%;
+    transform: rotate(25deg);
+    filter: blur(0.2px);
+}
+
+.drink-ingredient.sprinkle {
+    animation: sprinkleAnim 2s ease forwards;
+}
+
+.drink-ingredient.spin_fall {
+    animation: spinFallAnim 1.8s ease forwards;
+}
+
+.drink-ingredient.glow_rise {
+    animation: glowRiseAnim 2.5s ease forwards;
+}
+
+.drink-ingredient.float_top {
+    animation: floatTopAnim 2s ease forwards;
+}
+
+.drink-ingredient.sink_slow {
+    animation: sinkSlowAnim 2.5s ease forwards;
+}
+
+.drink-ingredient.bubble_rise {
+    animation: bubbleRiseAnim 3s ease infinite;
+}
+
+.drink-ingredient.pour_wall {
+    animation: pourWallAnim 2s ease forwards;
+}
+
+.drink-ingredient.twist_fall {
+    animation: twistFallAnim 1.5s ease forwards;
+}
+
+.drink-ingredient.smoke_rise {
+    animation: smokeRiseAnim 3s ease forwards;
+}
+
+.drink-ingredient.sparkle_rise {
+    animation: sparkleRiseAnim 2s ease infinite;
+}
+
+.drink-ingredient.slide_wedge {
+    animation: slideWedgeAnim 1.5s ease forwards;
+}
+
+.drink-ingredient.spin_sink {
+    animation: spinSinkAnim 2s ease forwards;
+}
+
+.drink-ingredient.petal_fall {
+    animation: petalFallAnim 2.5s ease forwards;
+}
+
+.drink-ingredient.stand_float {
+    animation: standFloatAnim 2s ease forwards;
+}
+
+.drink-ingredient.drip_drop {
+    animation: dripDropAnim 1.5s ease forwards;
+}
+
+.drink-ingredient.stick_drop {
+    animation: stickDropAnim 1.2s ease forwards;
+}
+
+.drink-ingredient.chunk_roll {
+    animation: chunkRollAnim 1.5s ease forwards;
+}
+
+.drink-ingredient.text_fade {
+    animation: textFadeAnim 2s ease forwards;
+}
+
+.drink-ingredient.sink_bottom {
+    animation: sinkBottomAnim 2s ease forwards;
+}
+
+.drink-ingredient.float_surface {
+    animation: floatSurfaceAnim 2s ease forwards;
+}
+
+.drink-ingredient.half_float {
+    animation: halfFloatAnim 1.8s ease forwards;
+}
+
+.drink-ingredient.whip_top {
+    animation: whipTopAnim 2s ease forwards;
+}
+
+.drink-ingredient.fluffy_top {
+    animation: fluffyTopAnim 2.5s ease forwards;
+}
+
+.drink-ingredient.ribbon_swim {
+    animation: ribbonSwimAnim 4s ease infinite;
+}
+
+.drink-ingredient.slow_sink {
+    animation: slowSinkAnim 3s ease forwards;
+}
+
+.drink-ingredient.snow_fall {
+    animation: snowFallAnim 2.5s ease forwards;
+}
+
+.drink-ingredient.dense_bubbles {
+    animation: denseBubblesAnim 2s ease infinite;
+}
+
+.drink-ingredient.pour_slow {
+    animation: pourSlowAnim 2.5s ease forwards;
+}
+
+.drink-ingredient.powder_fall {
+    animation: powderFallAnim 2s ease forwards;
+}
+
+.drink-ingredient.leaf_sink {
+    animation: leafSinkAnim 2.5s ease forwards;
+}
+
+.drink-ingredient.layered_petals {
+    animation: layeredPetalsAnim 3s ease forwards;
+}
+
+.drink-ingredient.drop_diffuse {
+    animation: dropDiffuseAnim 2s ease forwards;
+}
+
+.drink-ingredient.rise_bottom {
+    animation: riseBottomAnim 2.5s ease forwards;
+}
+
+.drink-ingredient.swim_bottom {
+    animation: swimBottomAnim 4s ease infinite;
+}
+
+.drink-ingredient.dissolve {
+    animation: dissolveAnim 2s ease forwards;
+}
+
+.drink-ingredient.unfold {
+    animation: unfoldAnim 2.5s ease forwards;
+}
+
+.drink-ingredient.spin_glow {
+    animation: spinGlowAnim 3s ease infinite;
+}
+
+.drink-ingredient.expand_fluffy {
+    animation: expandFluffyAnim 2.5s ease forwards;
+}
+
+.drink-ingredient.flicker_rise {
+    animation: flickerRiseAnim 2s ease infinite;
+}
+
+.drink-ingredient.big_ice_drop {
+    animation: bigIceDropAnim 1.5s ease forwards;
+}
+
+.drink-ingredient.rim_hang {
+    animation: rimHangAnim 1.5s ease forwards;
+}
+
+.drink-ingredient.frost_glass {
+    animation: frostGlassAnim 3s ease forwards;
+}
+
+.drink-ingredient.note_rise {
+    animation: noteRiseAnim 3s ease infinite;
+}
+
+.drink-ingredient.cherry_drop {
+    animation: cherryDropAnim 1.5s ease forwards;
+}
+
+.drink-ingredient.chunk_float {
+    animation: chunkFloatAnim 2s ease forwards;
+}
+
+.drink-ingredient.fine_bubbles {
+    animation: fineBubblesAnim 2.5s ease infinite;
+}
+
+.drink-ingredient.melt_diffuse {
+    animation: meltDiffuseAnim 2.5s ease forwards;
+}
+
+.drink-ingredient.cream_top {
+    animation: creamTopAnim 2s ease forwards;
+}
+
+.drink-ingredient.crumbles {
+    animation: crumblesAnim 2s ease forwards;
+}
+
+.drink-ingredient.gradual_diffuse {
+    animation: gradualDiffuseAnim 3s ease forwards;
+}
+
+.drink-ingredient.lid_drip {
+    animation: lidDripAnim 2s ease forwards;
+}
+
+.drink-ingredient.streak_bottom {
+    animation: streakBottomAnim 1.5s ease forwards;
+}
+
+.drink-ingredient.suspend_spin {
+    animation: suspendSpinAnim 4s ease infinite;
+}
+
+.drink-ingredient.trail_bubbles {
+    animation: trailBubblesAnim 2.5s ease infinite;
+}
+
+.drink-ingredient.disc_sink {
+    animation: discSinkAnim 2s ease forwards;
+}
+
+.drink-ingredient.spiral_rise {
+    animation: spiralRiseAnim 3s ease infinite;
+}
+
+.drink-ingredient.float_flowers {
+    animation: floatFlowersAnim 2.5s ease forwards;
+}
+
+.drink-ingredient.color_gradual {
+    animation: colorGradualAnim 3s ease forwards;
+}
+
+.drink-ingredient.strip_sink {
+    animation: stripSinkAnim 2.5s ease forwards;
+}
+
+.drink-ingredient.strobe_glow {
+    animation: strobeGlowAnim 2s ease infinite;
+}
+
+.drink-ingredient.wall_stick {
+    animation: wallStickAnim 1.5s ease forwards;
+}
+
+.drink-ingredient.neon_bubbles {
+    animation: neonBubblesAnim 2s ease infinite;
+}
+
+.drink-ingredient.berry_sink {
+    animation: berrySinkAnim 2s ease forwards;
+}
+
+.drink-ingredient.swim_around {
+    animation: swimAroundAnim 5s ease infinite;
+}
+
+.drink-ingredient.float_chips {
+    animation: floatChipsAnim 3s ease infinite;
+}
+
+.drink-ingredient.top_half {
+    animation: topHalfAnim 1.5s ease forwards;
+}
+
+.drink-ingredient.vortex_spin {
+    animation: vortexSpinAnim 3s ease infinite;
+}
+
+.drink-ingredient.powder_sprinkle {
+    animation: powderSprinkleAnim 2s ease forwards;
+}
+
+.drink-ingredient.glow_bottom {
+    animation: glowBottomAnim 2s ease forwards;
+}
+
+.drink-ingredient.pour_silver {
+    animation: pourSilverAnim 2.5s ease forwards;
+}
+
+.drink-ingredient.rim_salt {
+    animation: rimSaltAnim 2s ease forwards;
+}
+
+.drink-ingredient.pour_foam {
+    animation: pourFoamAnim 2s ease forwards;
+}
+
+.drink-ingredient.draw_art {
+    animation: drawArtAnim 2.5s ease forwards;
+}
+
+.drink-ingredient.shimmer_glass {
+    animation: shimmerGlassAnim 3s ease infinite;
+}
+
+.drink-ingredient.sway_bottom {
+    animation: swayBottomAnim 4s ease infinite;
+}
+
+.drink-ingredient.long_float {
+    animation: longFloatAnim 3s ease infinite;
+}
+
+.drink-ingredient.chunk_sink {
+    animation: chunkSinkAnim 2s ease forwards;
+}
+
+.drink-ingredient.vortex_storm {
+    animation: vortexStormAnim 3s ease infinite;
+}
+
+.drink-ingredient.leaves_unfurl {
+    animation: leavesUnfurlAnim 2.5s ease forwards;
+}
+
+.drink-ingredient.golden_fall {
+    animation: goldenFallAnim 2.5s ease forwards;
+}
+
+.drink-ingredient.ribbon_spin {
+    animation: ribbonSpinAnim 4s ease infinite;
+}
+
+.drink-ingredient.skirt_spread {
+    animation: skirtSpreadAnim 2s ease forwards;
+}
+
+.drink-ingredient.top_shower {
+    animation: topShowerAnim 2.5s ease infinite;
+}
+
+@keyframes glassAppear {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes liquidWave {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-2px); }
+}
+
+@keyframes sprinkleAnim {
+    0% { top: -20px; left: 50%; opacity: 0; font-size: 8px; }
+    30% { opacity: 1; }
+    100% { top: 65%; left: 45%; opacity: 0.8; font-size: 16px; }
+}
+
+@keyframes spinFallAnim {
+    0% { top: -30px; left: 30%; opacity: 0; transform: rotate(0deg); }
+    20% { opacity: 1; }
+    100% { top: 55%; left: 60%; opacity: 0.9; transform: rotate(720deg); }
+}
+
+@keyframes glowRiseAnim {
+    0% { bottom: 10%; left: 50%; opacity: 0; filter: blur(4px); font-size: 12px; }
+    50% { opacity: 0.8; filter: blur(2px); font-size: 18px; }
+    100% { bottom: 60%; left: 45%; opacity: 0.6; filter: blur(1px); font-size: 20px; }
+}
+
+@keyframes floatTopAnim {
+    0% { top: -20px; left: 40%; opacity: 0; }
+    60% { opacity: 1; }
+    100% { top: 18%; left: 35%; opacity: 0.9; transform: rotate(-15deg); }
+}
+
+@keyframes sinkSlowAnim {
+    0% { top: 10%; left: 30%; opacity: 0; }
+    30% { opacity: 0.9; }
+    100% { top: 60%; left: 55%; opacity: 0.7; }
+}
+
+@keyframes bubbleRiseAnim {
+    0% { bottom: 10%; left: 40%; opacity: 0; font-size: 10px; }
+    20% { opacity: 0.8; }
+    80% { opacity: 0.6; }
+    100% { bottom: 70%; left: 45%; opacity: 0; font-size: 14px; }
+}
+
+@keyframes pourWallAnim {
+    0% { top: 0; right: -10px; opacity: 0; width: 0; }
+    40% { opacity: 0.8; }
+    100% { top: 0; right: 5px; opacity: 0.7; height: 70%; width: 4px; }
+}
+
+@keyframes twistFallAnim {
+    0% { top: -20px; left: 50%; opacity: 0; }
+    30% { opacity: 1; }
+    100% { top: 25%; left: 25%; opacity: 0.9; transform: rotate(180deg); }
+}
+
+@keyframes smokeRiseAnim {
+    0% { bottom: 50%; left: 50%; opacity: 0; filter: blur(3px); font-size: 10px; }
+    40% { opacity: 0.5; filter: blur(5px); font-size: 20px; }
+    100% { bottom: 90%; left: 45%; opacity: 0; filter: blur(8px); font-size: 28px; }
+}
+
+@keyframes sparkleRiseAnim {
+    0% { bottom: 20%; left: 40%; opacity: 0; font-size: 8px; }
+    50% { opacity: 1; font-size: 14px; }
+    100% { bottom: 65%; left: 55%; opacity: 0.5; font-size: 10px; }
+}
+
+@keyframes slideWedgeAnim {
+    0% { top: -20px; right: -10px; opacity: 0; }
+    50% { opacity: 0.9; }
+    100% { top: 30%; right: 10%; opacity: 0.8; transform: rotate(30deg); }
+}
+
+@keyframes spinSinkAnim {
+    0% { top: -10px; left: 50%; opacity: 0; transform: rotate(0deg); }
+    30% { opacity: 1; }
+    100% { top: 70%; left: 45%; opacity: 0.8; transform: rotate(-360deg); }
+}
+
+@keyframes petalFallAnim {
+    0% { top: -10%; left: 30%; opacity: 0; transform: rotate(0deg); }
+    25% { opacity: 0.9; transform: rotate(90deg); }
+    50% { left: 60%; transform: rotate(180deg); }
+    75% { left: 35%; transform: rotate(270deg); }
+    100% { top: 70%; left: 50%; opacity: 0.7; transform: rotate(360deg); }
+}
+
+@keyframes standFloatAnim {
+    0% { top: -20px; left: 30%; opacity: 0; }
+    40% { opacity: 0.9; }
+    100% { top: 30%; left: 25%; opacity: 0.8; transform: rotate(5deg); }
+}
+
+@keyframes dripDropAnim {
+    0% { top: -5px; left: 50%; opacity: 0; font-size: 8px; }
+    50% { opacity: 1; font-size: 14px; }
+    100% { top: 50%; left: 48%; opacity: 0; font-size: 16px; }
+}
+
+@keyframes stickDropAnim {
+    0% { top: -20px; left: 40%; opacity: 0; transform: rotate(-30deg); }
+    40% { opacity: 1; }
+    100% { top: 60%; left: 50%; opacity: 0.8; transform: rotate(15deg); }
+}
+
+@keyframes chunkRollAnim {
+    0% { top: -15px; left: 20%; opacity: 0; }
+    40% { opacity: 0.9; }
+    100% { top: 55%; left: 65%; opacity: 0.8; transform: rotate(180deg); }
+}
+
+@keyframes textFadeAnim {
+    0% { top: 40%; left: 50%; opacity: 0; transform: translateX(-50%) scale(0.5); }
+    50% { opacity: 0.8; transform: translateX(-50%) scale(1); }
+    100% { top: 40%; left: 50%; opacity: 0; transform: translateX(-50%) scale(1.2); }
+}
+
+@keyframes sinkBottomAnim {
+    0% { top: 10%; left: 50%; opacity: 0; }
+    40% { opacity: 1; }
+    100% { top: 75%; left: 45%; opacity: 0.7; }
+}
+
+@keyframes floatSurfaceAnim {
+    0% { top: 5%; left: 30%; opacity: 0; }
+    60% { opacity: 0.9; }
+    100% { top: 15%; left: 60%; opacity: 0.8; transform: rotate(10deg); }
+}
+
+@keyframes halfFloatAnim {
+    0% { top: -15px; left: 35%; opacity: 0; }
+    50% { opacity: 1; }
+    100% { top: 20%; left: 55%; opacity: 0.9; }
+}
+
+@keyframes whipTopAnim {
+    0% { top: -20px; left: 50%; opacity: 0; width: 60%; transform: translateX(-50%); }
+    50% { opacity: 0.9; }
+    100% { top: 5%; left: 50%; opacity: 0.85; width: 80%; transform: translateX(-50%); }
+}
+
+@keyframes fluffyTopAnim {
+    0% { top: -30px; left: 50%; opacity: 0; font-size: 16px; transform: translateX(-50%); }
+    50% { opacity: 0.8; font-size: 28px; }
+    100% { top: 0%; left: 50%; opacity: 0.7; font-size: 24px; transform: translateX(-50%); }
+}
+
+@keyframes ribbonSwimAnim {
+    0% { top: 30%; left: 20%; opacity: 0.6; transform: rotate(0deg); }
+    25% { top: 40%; left: 60%; transform: rotate(90deg); }
+    50% { top: 50%; left: 70%; opacity: 0.8; transform: rotate(180deg); }
+    75% { top: 45%; left: 30%; transform: rotate(270deg); }
+    100% { top: 30%; left: 20%; opacity: 0.6; transform: rotate(360deg); }
+}
+
+@keyframes slowSinkAnim {
+    0% { top: 15%; left: 60%; opacity: 0; }
+    30% { opacity: 0.9; }
+    100% { top: 55%; left: 40%; opacity: 0.7; }
+}
+
+@keyframes snowFallAnim {
+    0% { top: -10%; left: 20%; opacity: 0; }
+    20% { opacity: 0.8; }
+    50% { left: 50%; }
+    80% { left: 30%; }
+    100% { top: 60%; left: 45%; opacity: 0.6; }
+}
+
+@keyframes denseBubblesAnim {
+    0% { bottom: 15%; left: 30%; opacity: 0; font-size: 6px; }
+    20% { opacity: 0.7; }
+    80% { opacity: 0.5; }
+    100% { bottom: 65%; left: 40%; opacity: 0; font-size: 10px; }
+}
+
+@keyframes pourSlowAnim {
+    0% { top: 0; left: 50%; opacity: 0; height: 0; width: 3px; }
+    30% { opacity: 0.8; }
+    100% { top: 0; left: 50%; opacity: 0; height: 70%; width: 3px; }
+}
+
+@keyframes powderFallAnim {
+    0% { top: -10px; left: 40%; opacity: 0; font-size: 6px; }
+    30% { opacity: 0.8; font-size: 12px; }
+    100% { top: 40%; left: 50%; opacity: 0.6; font-size: 10px; }
+}
+
+@keyframes leafSinkAnim {
+    0% { top: 10%; left: 60%; opacity: 0; transform: rotate(0deg); }
+    30% { opacity: 0.8; }
+    100% { top: 50%; left: 35%; opacity: 0.7; transform: rotate(180deg); }
+}
+
+@keyframes layeredPetalsAnim {
+    0% { top: -5%; left: 50%; opacity: 0; font-size: 10px; }
+    40% { opacity: 0.9; font-size: 18px; }
+    100% { top: 25%; left: 45%; opacity: 0.8; font-size: 16px; }
+}
+
+@keyframes dropDiffuseAnim {
+    0% { top: 0; left: 50%; opacity: 0; font-size: 8px; }
+    50% { opacity: 1; font-size: 16px; }
+    100% { top: 40%; left: 50%; opacity: 0; font-size: 24px; filter: blur(3px); }
+}
+
+@keyframes riseBottomAnim {
+    0% { bottom: 0; left: 50%; opacity: 0; width: 40%; transform: translateX(-50%); height: 0; }
+    50% { opacity: 0.6; }
+    100% { bottom: 0; left: 50%; opacity: 0.4; width: 60%; transform: translateX(-50%); height: 50%; }
+}
+
+@keyframes swimBottomAnim {
+    0% { left: 20%; bottom: 20%; opacity: 0.5; }
+    25% { left: 70%; bottom: 15%; opacity: 0.7; }
+    50% { left: 75%; bottom: 25%; opacity: 0.6; }
+    75% { left: 25%; bottom: 22%; opacity: 0.7; }
+    100% { left: 20%; bottom: 20%; opacity: 0.5; }
+}
+
+@keyframes dissolveAnim {
+    0% { top: 20%; left: 45%; opacity: 1; font-size: 14px; }
+    100% { top: 35%; left: 50%; opacity: 0; font-size: 10px; filter: blur(2px); }
+}
+
+@keyframes unfoldAnim {
+    0% { top: 40%; left: 50%; opacity: 0; transform: translateX(-50%) scale(0.3) rotate(0deg); }
+    50% { opacity: 0.8; transform: translateX(-50%) scale(1) rotate(5deg); }
+    100% { top: 40%; left: 50%; opacity: 0; transform: translateX(-50%) scale(1.5) rotate(10deg); }
+}
+
+@keyframes spinGlowAnim {
+    0% { top: 40%; left: 50%; opacity: 0.6; transform: translateX(-50%) rotate(0deg); font-size: 16px; }
+    50% { opacity: 1; font-size: 22px; filter: drop-shadow(0 0 8px gold); }
+    100% { top: 40%; left: 50%; opacity: 0.6; transform: translateX(-50%) rotate(360deg); font-size: 16px; }
+}
+
+@keyframes expandFluffyAnim {
+    0% { top: 30%; left: 50%; opacity: 0; font-size: 12px; transform: translateX(-50%); }
+    50% { opacity: 0.8; font-size: 28px; }
+    100% { top: 20%; left: 50%; opacity: 0.6; font-size: 32px; transform: translateX(-50%); }
+}
+
+@keyframes flickerRiseAnim {
+    0% { bottom: 20%; left: 30%; opacity: 0; font-size: 8px; }
+    50% { opacity: 0.9; font-size: 14px; }
+    100% { bottom: 60%; left: 60%; opacity: 0.4; font-size: 10px; }
+}
+
+@keyframes bigIceDropAnim {
+    0% { top: -40px; left: 35%; opacity: 0; font-size: 30px; }
+    30% { opacity: 0.9; }
+    100% { top: 35%; left: 40%; opacity: 0.8; font-size: 28px; }
+}
+
+@keyframes rimHangAnim {
+    0% { top: -10px; right: 0; opacity: 0; }
+    50% { opacity: 0.9; }
+    100% { top: 5%; right: 5%; opacity: 0.85; transform: rotate(20deg); }
+}
+
+@keyframes frostGlassAnim {
+    0% { top: 0; left: 0; opacity: 0; font-size: 10px; }
+    50% { opacity: 0.6; }
+    100% { top: 20%; left: 10%; opacity: 0.4; font-size: 16px; }
+}
+
+@keyframes noteRiseAnim {
+    0% { bottom: 30%; left: 30%; opacity: 0; transform: rotate(0deg); }
+    30% { opacity: 0.7; }
+    100% { bottom: 70%; left: 60%; opacity: 0; transform: rotate(30deg); }
+}
+
+@keyframes cherryDropAnim {
+    0% { top: -20px; left: 55%; opacity: 0; }
+    30% { opacity: 1; }
+    60% { top: 35%; }
+    70% { top: 30%; }
+    80% { top: 35%; }
+    100% { top: 32%; left: 50%; opacity: 0.9; }
+}
+
+@keyframes chunkFloatAnim {
+    0% { top: -15px; left: 40%; opacity: 0; }
+    60% { opacity: 0.9; }
+    100% { top: 25%; left: 55%; opacity: 0.8; }
+}
+
+@keyframes fineBubblesAnim {
+    0% { bottom: 20%; left: 45%; opacity: 0; font-size: 5px; }
+    30% { opacity: 0.6; }
+    70% { opacity: 0.4; }
+    100% { bottom: 55%; left: 50%; opacity: 0; font-size: 8px; }
+}
+
+@keyframes meltDiffuseAnim {
+    0% { top: 20%; left: 50%; opacity: 1; font-size: 18px; transform: translateX(-50%); }
+    50% { opacity: 0.8; font-size: 22px; }
+    100% { top: 40%; left: 50%; opacity: 0; font-size: 28px; filter: blur(4px); }
+}
+
+@keyframes creamTopAnim {
+    0% { top: -10px; left: 50%; opacity: 0; transform: translateX(-50%); }
+    60% { opacity: 0.9; }
+    100% { top: 10%; left: 50%; opacity: 0.85; transform: translateX(-50%); }
+}
+
+@keyframes crumblesAnim {
+    0% { top: -10px; left: 40%; opacity: 0; font-size: 8px; }
+    40% { opacity: 0.8; font-size: 12px; }
+    100% { top: 45%; left: 55%; opacity: 0.6; font-size: 10px; }
+}
+
+@keyframes gradualDiffuseAnim {
+    0% { top: 30%; left: 50%; opacity: 0.2; width: 20%; transform: translateX(-50%); }
+    100% { top: 30%; left: 50%; opacity: 0.1; width: 80%; transform: translateX(-50%); }
+}
+
+@keyframes lidDripAnim {
+    0% { top: 0; left: 60%; opacity: 0; }
+    50% { opacity: 0.7; }
+    100% { top: 30%; left: 58%; opacity: 0; }
+}
+
+@keyframes streakBottomAnim {
+    0% { bottom: 10%; left: 20%; opacity: 0; width: 0; }
+    30% { opacity: 0.8; }
+    100% { bottom: 10%; left: 20%; opacity: 0.5; width: 60%; }
+}
+
+@keyframes suspendSpinAnim {
+    0% { top: 40%; left: 30%; opacity: 0.7; transform: rotate(0deg); font-size: 12px; }
+    50% { top: 35%; left: 60%; opacity: 0.9; transform: rotate(180deg); font-size: 16px; }
+    100% { top: 40%; left: 30%; opacity: 0.7; transform: rotate(360deg); font-size: 12px; }
+}
+
+@keyframes trailBubblesAnim {
+    0% { bottom: 20%; left: 30%; opacity: 0; font-size: 6px; }
+    50% { opacity: 0.6; font-size: 10px; }
+    100% { bottom: 55%; left: 55%; opacity: 0; font-size: 8px; }
+}
+
+@keyframes discSinkAnim {
+    0% { top: 10%; left: 50%; opacity: 0; transform: translateX(-50%) rotateY(0deg); }
+    40% { opacity: 0.9; }
+    100% { top: 65%; left: 50%; opacity: 0.7; transform: translateX(-50%) rotateY(180deg); }
+}
+
+@keyframes spiralRiseAnim {
+    0% { bottom: 20%; left: 50%; opacity: 0; transform: rotate(0deg); }
+    30% { opacity: 0.7; }
+    100% { bottom: 60%; left: 55%; opacity: 0; transform: rotate(360deg); }
+}
+
+@keyframes floatFlowersAnim {
+    0% { top: -5%; left: 30%; opacity: 0; }
+    60% { opacity: 0.9; }
+    100% { top: 20%; left: 50%; opacity: 0.8; }
+}
+
+@keyframes colorGradualAnim {
+    0% { top: 50%; left: 50%; opacity: 0; transform: translateX(-50%) scale(0.5); }
+    100% { top: 50%; left: 50%; opacity: 0.3; transform: translateX(-50%) scale(1.5); }
+}
+
+@keyframes stripSinkAnim {
+    0% { top: 10%; left: 35%; opacity: 0; transform: rotate(-10deg); }
+    40% { opacity: 0.8; }
+    100% { top: 50%; left: 55%; opacity: 0.7; transform: rotate(15deg); }
+}
+
+@keyframes strobeGlowAnim {
+    0%, 100% { top: 30%; left: 50%; opacity: 0.3; transform: translateX(-50%); }
+    50% { top: 30%; left: 50%; opacity: 0.8; transform: translateX(-50%); }
+}
+
+@keyframes wallStickAnim {
+    0% { top: 0; right: -10px; opacity: 0; }
+    50% { opacity: 0.9; }
+    100% { top: 30%; right: 5%; opacity: 0.85; transform: rotate(-10deg); }
+}
+
+@keyframes neonBubblesAnim {
+    0% { bottom: 15%; left: 40%; opacity: 0; font-size: 8px; }
+    30% { opacity: 0.7; }
+    80% { opacity: 0.5; }
+    100% { bottom: 60%; left: 50%; opacity: 0; font-size: 12px; }
+}
+
+@keyframes berrySinkAnim {
+    0% { top: -10px; left: 40%; opacity: 0; }
+    40% { opacity: 1; }
+    100% { top: 60%; left: 50%; opacity: 0.8; }
+}
+
+@keyframes swimAroundAnim {
+    0% { left: 20%; top: 50%; opacity: 0.6; }
+    25% { left: 70%; top: 40%; opacity: 0.8; }
+    50% { left: 75%; top: 60%; opacity: 0.7; }
+    75% { left: 25%; top: 55%; opacity: 0.8; }
+    100% { left: 20%; top: 50%; opacity: 0.6; }
+}
+
+@keyframes floatChipsAnim {
+    0% { top: 30%; left: 30%; opacity: 0.6; transform: rotate(0deg); }
+    50% { top: 35%; left: 60%; opacity: 0.7; transform: rotate(45deg); }
+    100% { top: 30%; left: 30%; opacity: 0.6; transform: rotate(0deg); }
+}
+
+@keyframes topHalfAnim {
+    0% { top: -20px; left: 50%; opacity: 0; transform: translateX(-50%); }
+    50% { opacity: 1; }
+    100% { top: 5%; left: 50%; opacity: 0.9; transform: translateX(-50%); }
+}
+
+@keyframes vortexSpinAnim {
+    0% { top: 40%; left: 50%; opacity: 0.5; transform: translateX(-50%) rotate(0deg); }
+    50% { opacity: 0.8; transform: translateX(-50%) rotate(180deg); }
+    100% { top: 40%; left: 50%; opacity: 0.5; transform: translateX(-50%) rotate(360deg); }
+}
+
+@keyframes powderSprinkleAnim {
+    0% { top: -10px; left: 40%; opacity: 0; font-size: 6px; }
+    40% { opacity: 0.8; font-size: 10px; }
+    100% { top: 25%; left: 50%; opacity: 0.7; font-size: 8px; }
+}
+
+@keyframes glowBottomAnim {
+    0% { bottom: 0; left: 50%; opacity: 0; width: 20%; transform: translateX(-50%); height: 20%; }
+    50% { opacity: 0.6; }
+    100% { bottom: 0; left: 50%; opacity: 0.3; width: 80%; transform: translateX(-50%); height: 50%; }
+}
+
+@keyframes pourSilverAnim {
+    0% { top: 0; left: 50%; opacity: 0; height: 0; width: 4px; }
+    40% { opacity: 0.7; }
+    100% { top: 0; left: 50%; opacity: 0; height: 60%; width: 4px; }
+}
+
+@keyframes rimSaltAnim {
+    0% { top: -5px; left: 50%; opacity: 0; transform: translateX(-50%); font-size: 8px; }
+    50% { opacity: 0.8; font-size: 12px; }
+    100% { top: 2%; left: 50%; opacity: 0.7; transform: translateX(-50%); font-size: 10px; }
+}
+
+@keyframes pourFoamAnim {
+    0% { top: 0; left: 50%; opacity: 0; transform: translateX(-50%); width: 30%; height: 0; }
+    60% { opacity: 0.8; }
+    100% { top: 10%; left: 50%; opacity: 0; transform: translateX(-50%); width: 50%; height: 30%; }
+}
+
+@keyframes drawArtAnim {
+    0% { top: 25%; left: 50%; opacity: 0; transform: translateX(-50%) scale(0.3); }
+    50% { opacity: 0.6; transform: translateX(-50%) scale(0.8); }
+    100% { top: 25%; left: 50%; opacity: 0.4; transform: translateX(-50%) scale(1); }
+}
+
+@keyframes shimmerGlassAnim {
+    0%, 100% { top: 20%; left: 20%; opacity: 0.3; font-size: 14px; }
+    50% { top: 20%; left: 20%; opacity: 0.7; font-size: 16px; filter: drop-shadow(0 0 6px silver); }
+}
+
+@keyframes swayBottomAnim {
+    0%, 100% { bottom: 10%; left: 45%; opacity: 0.6; }
+    50% { bottom: 15%; left: 55%; opacity: 0.8; }
+}
+
+@keyframes longFloatAnim {
+    0% { top: 20%; left: 25%; opacity: 0.7; transform: rotate(-5deg); }
+    50% { top: 25%; left: 65%; opacity: 0.8; transform: rotate(10deg); }
+    100% { top: 20%; left: 25%; opacity: 0.7; transform: rotate(-5deg); }
+}
+
+@keyframes chunkSinkAnim {
+    0% { top: -10px; left: 35%; opacity: 0; }
+    40% { opacity: 0.9; }
+    100% { top: 50%; left: 55%; opacity: 0.7; }
+}
+
+@keyframes vortexStormAnim {
+    0% { top: 40%; left: 50%; opacity: 0.4; transform: translateX(-50%) rotate(0deg); }
+    50% { opacity: 0.7; transform: translateX(-50%) rotate(180deg); }
+    100% { top: 40%; left: 50%; opacity: 0.4; transform: translateX(-50%) rotate(360deg); }
+}
+
+@keyframes leavesUnfurlAnim {
+    0% { top: 30%; left: 50%; opacity: 0; transform: translateX(-50%) scale(0.2); }
+    50% { opacity: 0.7; transform: translateX(-50%) scale(0.8); }
+    100% { top: 35%; left: 50%; opacity: 0.5; transform: translateX(-50%) scale(1.2); }
+}
+
+@keyframes goldenFallAnim {
+    0% { top: -10%; left: 40%; opacity: 0; font-size: 10px; }
+    40% { opacity: 0.8; font-size: 14px; }
+    100% { top: 40%; left: 50%; opacity: 0.6; font-size: 12px; }
+}
+
+@keyframes ribbonSpinAnim {
+    0% { top: 30%; left: 30%; opacity: 0.5; transform: rotate(0deg) scaleX(1); }
+    25% { top: 35%; left: 60%; opacity: 0.7; transform: rotate(90deg) scaleX(1.5); }
+    50% { top: 45%; left: 65%; opacity: 0.6; transform: rotate(180deg) scaleX(1); }
+    75% { top: 40%; left: 35%; opacity: 0.7; transform: rotate(270deg) scaleX(1.5); }
+    100% { top: 30%; left: 30%; opacity: 0.5; transform: rotate(360deg) scaleX(1); }
+}
+
+@keyframes skirtSpreadAnim {
+    0% { top: 30%; left: 50%; opacity: 0; transform: translateX(-50%) scale(0.3); }
+    50% { opacity: 0.7; transform: translateX(-50%) scale(0.8); }
+    100% { top: 30%; left: 50%; opacity: 0.5; transform: translateX(-50%) scale(1.2); }
+}
+
+@keyframes topShowerAnim {
+    0% { top: -5%; left: 30%; opacity: 0; font-size: 8px; }
+    30% { opacity: 0.7; font-size: 12px; }
+    70% { opacity: 0.5; }
+    100% { top: 30%; left: 50%; opacity: 0; font-size: 10px; }
+}
+
+.mixing-step {
+    font-size: 14px;
+    color: var(--text-dim);
+    letter-spacing: 4px;
+    margin-top: 20px;
+    opacity: 0;
+    animation: fadeIn 0.8s ease forwards;
+    min-height: 20px;
+}
+
+/* ========== 结果页/酒卡 ========== */
+#result-screen {
+    background: radial-gradient(ellipse at center, #1a1a1a 0%, #0d0d0d 100%);
+    justify-content: flex-start;
+    padding: 60px 20px;
+}
+
+.result-container {
+    max-width: 560px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.result-header {
+    text-align: center;
+    margin-bottom: 48px;
+}
+
+/* ========== 分享酒卡外观展示 ========== */
+.result-drink-preview {
+    width: 100%;
+    height: 220px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: -12px 0 36px 0; /* 微调间距，使酒名、酒杯、Created by 比例更和谐优雅 */
+}
+
+.result-drink-preview .tavern-glass {
+    transform: scale(1.8);
+}
+
+
+.result-label {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 12px;
+    letter-spacing: 6px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+}
+
+.drink-name-en {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 40px;
+    font-weight: 300;
+    letter-spacing: 6px;
+    background: var(--gold-grad);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+}
+
+.drink-name-cn {
+    font-size: 18px;
+    letter-spacing: 8px;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+}
+
+.drink-type {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 14px;
+    letter-spacing: 3px;
+    color: #666;
+}
+
+.drink-alcohol {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: #999;
+    margin-top: 4px;
+}
+
+.bartender-info {
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    margin-bottom: 48px;
+    padding: 16px;
+    border-top: 1px solid #2a2a2a;
+    border-bottom: 1px solid #2a2a2a;
+}
+
+.bartender-info strong {
+    color: var(--accent);
+    font-weight: 400;
+}
+
+.section {
+    margin-bottom: 48px;
+}
+
+.section-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 13px;
+    letter-spacing: 5px;
+    color: var(--text-dim);
+    margin-bottom: 24px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.section-title::before,
+.section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #2a2a2a;
+}
+
+.ingredients-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.ingredient-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 16px 20px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid #222;
+}
+
+.ingredient-emoji {
+    font-size: 28px;
+    flex-shrink: 0;
+}
+
+.ingredient-content {
+    flex: 1;
+}
+
+.ingredient-name {
+    font-size: 15px;
+    letter-spacing: 2px;
+    color: var(--text);
+    margin-bottom: 6px;
+}
+
+.ingredient-meaning {
+    font-size: 13px;
+    line-height: 1.8;
+    color: var(--text-dim);
+}
+
+.story-text {
+    font-size: 14px;
+    line-height: 2;
+    color: #ccc;
+    letter-spacing: 1px;
+    text-align: justify;
+    padding: 24px;
+    background: rgba(255, 255, 255, 0.02);
+    border-left: 2px solid var(--accent);
+    white-space: pre-line;
+}
+
+.tavern-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 20px;
+    padding-bottom: 40px;
+}
+
+.tavern-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: transparent;
+    border: 1px solid rgba(255, 200, 100, 0.3);
+    color: var(--text-dim);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 15px;
+    letter-spacing: 6px;
+    padding: 16px 32px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    text-align: center;
+}
+
+.tavern-action-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.tavern-action-btn.primary {
+    background: linear-gradient(135deg, rgba(212, 165, 116, 0.15), rgba(255, 200, 100, 0.05));
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.tavern-action-btn.primary:hover {
+    background: linear-gradient(135deg, rgba(212, 165, 116, 0.25), rgba(255, 200, 100, 0.1));
+}
+
+.action-icon {
+    font-size: 18px;
+    line-height: 1;
+}
+
+.action-text {
+    letter-spacing: 4px;
+}
+
+/* ========== 酒馆页 ========== */
+#tavern-screen {
+    background: radial-gradient(ellipse at center, #1a1a1a 0%, #0d0d0d 100%);
+    justify-content: flex-start;
+    padding: 60px 20px;
+}
+
+.tavern-container {
+    max-width: 700px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.tavern-header {
+    text-align: center;
+    margin-bottom: 48px;
+}
+
+.tavern-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 36px;
+    font-weight: 300;
+    letter-spacing: 8px;
+    background: var(--gold-grad);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+}
+
+.tavern-subtitle {
+    font-size: 14px;
+    letter-spacing: 4px;
+    color: var(--text-dim);
+}
+
+.tavern-count {
+    text-align: center;
+    font-size: 14px;
+    color: var(--text-dim);
+    letter-spacing: 3px;
+    margin-bottom: 40px;
+}
+
+.tavern-count strong {
+    color: var(--accent);
+    font-size: 22px;
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 400;
+    margin: 0 4px;
+}
+
+.stats-board {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 32px;
+    margin-bottom: 32px;
+}
+
+.stat-card {
+    background: rgba(40, 35, 30, 0.6);
+    border: 1px solid rgba(255, 200, 100, 0.2);
+    border-radius: 10px;
+    padding: 16px 12px;
+    text-align: center;
+}
+
+.stat-icon {
+    font-size: 24px;
+    margin-bottom: 8px;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: var(--text);
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+}
+
+.stat-value {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px;
+    color: var(--accent);
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+.stat-detail {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+}
+
+.drink-carousel {
+    position: relative;
+    width: 100%;
+    height: 460px;
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 0;
+    overflow: hidden;
+}
+
+.carousel-track {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.carousel-card {
+    position: absolute;
+    width: 290px;
+    background: rgba(40, 35, 30, 0.95);
+    border: 1px solid rgba(255, 200, 100, 0.35);
+    padding: 36px 28px;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    text-align: center;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.carousel-card.active {
+    z-index: 10;
+    transform: translateX(0) scale(1.05);
+    opacity: 1;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    border-color: rgba(255, 200, 100, 0.6);
+}
+
+.carousel-card.prev {
+    transform: translateX(-180px) scale(0.75);
+    opacity: 1;
+    z-index: 5;
+}
+
+.carousel-card.next {
+    transform: translateX(180px) scale(0.75);
+    opacity: 1;
+    z-index: 5;
+}
+
+.carousel-card.hidden-left {
+    transform: translateX(-360px) scale(0.6);
+    opacity: 0;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.carousel-card.hidden-right {
+    transform: translateX(360px) scale(0.6);
+    opacity: 0;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.carousel-card-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    filter: drop-shadow(0 0 12px rgba(255, 200, 100, 0.3));
+}
+
+.carousel-drink-preview {
+    width: 100%;
+    height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+
+.tavern-glass {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    border: 1px solid rgba(255, 200, 100, 0.25);
+    background: rgba(255, 255, 255, 0.02);
+    overflow: hidden;
+}
+
+.tavern-pencil-svg {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.tavern-pencil-layer {
+    animation: tavernWave 4s ease-in-out infinite;
+    transform-origin: center bottom;
+}
+
+.tavern-pencil-layer[data-layer="0"] {
+    animation-duration: 5s;
+    animation-delay: 0s;
+}
+
+.tavern-pencil-layer[data-layer="1"] {
+    animation-duration: 4.5s;
+    animation-delay: 0.5s;
+}
+
+.tavern-pencil-layer[data-layer="2"] {
+    animation-duration: 4s;
+    animation-delay: 1s;
+}
+
+@keyframes tavernWave {
+    0%, 100% {
+        transform: translateX(0) scaleY(1);
+    }
+    25% {
+        transform: translateX(-2px) scaleY(1.01);
+    }
+    50% {
+        transform: translateX(0) scaleY(0.99);
+    }
+    75% {
+        transform: translateX(2px) scaleY(1.01);
+    }
+}
+
+.tavern-glass-shine {
+    position: absolute;
+    top: 10%;
+    left: 15%;
+    width: 3px;
+    height: 60%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.2), transparent);
+    border-radius: 2px;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.tavern-glass.glass-rocks {
+    width: 90px;
+    height: 75px;
+    border-radius: 6px 6px 10px 10px;
+}
+
+.tavern-glass.glass-wine {
+    width: 100px;
+    height: 140px;
+    border-radius: 50% 50% 45% 45% / 60% 60% 40% 40%;
+    border: none;
+    background: radial-gradient(ellipse at center, rgba(232,184,109,0.08) 0%, transparent 70%);
+}
+
+.tavern-glass.glass-wine .tavern-glass-shine {
+    top: 25%;
+    height: 40%;
+}
+
+.tavern-glass.glass-coupe {
+    width: 110px;
+    height: 90px;
+    border-radius: 50% 50% 45% 45% / 70% 70% 30% 30%;
+    border: none;
+    background: radial-gradient(ellipse at 50% 70%, rgba(232,184,109,0.1) 0%, transparent 70%);
+}
+
+.tavern-glass.glass-coupe .tavern-glass-shine {
+    top: 30%;
+    height: 35%;
+}
+
+.tavern-glass.glass-coupe_tall {
+    width: 105px;
+    height: 110px;
+    border-radius: 50% 50% 45% 45% / 65% 65% 35% 35%;
+    border: none;
+    background: radial-gradient(ellipse at 50% 65%, rgba(232,184,109,0.08) 0%, transparent 70%);
+}
+
+.tavern-glass.glass-coupe_tall .tavern-glass-shine {
+    top: 28%;
+    height: 38%;
+}
+
+.tavern-glass.glass-sake {
+    width: 70px;
+    height: 60px;
+    border-radius: 35px 35px 8px 8px;
+}
+
+.tavern-glass.glass-highball {
+    width: 75px;
+    height: 130px;
+    border-radius: 4px 4px 8px 8px;
+}
+
+.tavern-glass.glass-collins {
+    width: 65px;
+    height: 140px;
+    border-radius: 3px 3px 6px 6px;
+}
+
+.tavern-glass.glass-margarita {
+    width: 100px;
+    height: 95px;
+    border-radius: 50% 50% 10% 10% / 80% 80% 10% 10%;
+    border: none;
+    background: radial-gradient(ellipse at 50% 80%, rgba(232,184,109,0.08) 0%, transparent 70%);
+}
+
+.tavern-glass.glass-margarita .tavern-glass-shine {
+    top: 28%;
+    height: 35%;
+}
+
+.tavern-glass.glass-cocktail {
+    width: 85px;
+    height: 110px;
+    border-radius: 0 0 45px 45px / 0 0 18px 18px;
+    clip-path: polygon(0 0, 100% 0, 90% 100%, 10% 100%);
+    border: none;
+    background: linear-gradient(180deg, rgba(232,184,109,0.05) 0%, rgba(232,184,109,0.1) 100%);
+}
+
+.tavern-glass.glass-cocktail .tavern-glass-shine {
+    top: 22%;
+    height: 40%;
+}
+
+.tavern-glass.glass-cocktail_tall {
+    width: 85px;
+    height: 120px;
+    border-radius: 0 0 45px 45px / 0 0 18px 18px;
+    clip-path: polygon(0 0, 100% 0, 88% 100%, 12% 100%);
+    border: none;
+    background: linear-gradient(180deg, rgba(232,184,109,0.05) 0%, rgba(232,184,109,0.1) 100%);
+}
+
+.tavern-glass.glass-cocktail_tall .tavern-glass-shine {
+    top: 20%;
+    height: 45%;
+}
+
+.tavern-glass.glass-burgundy {
+    width: 105px;
+    height: 115px;
+    border-radius: 50% 50% 45% 45% / 55% 55% 45% 45%;
+    border: none;
+    background: radial-gradient(ellipse at center, rgba(232,184,109,0.08) 0%, transparent 70%);
+}
+
+.tavern-glass.glass-burgundy .tavern-glass-shine {
+    top: 22%;
+    height: 42%;
+}
+
+.tavern-glass.glass-tiki {
+    width: 85px;
+    height: 130px;
+    border-radius: 15px 15px 20px 20px / 10px 10px 25px 25px;
+}
+
+.tavern-glass.glass-hurricane {
+    width: 80px;
+    height: 140px;
+    border-radius: 40px 40px 8px 8px / 50% 50% 5% 5%;
+}
+
+.tavern-glass.glass-pint {
+    width: 85px;
+    height: 120px;
+    border-radius: 3px;
+}
+
+.tavern-glass.glass-irish {
+    width: 80px;
+    height: 105px;
+    border-radius: 0 0 40px 40px / 0 0 15px 15px;
+}
+
+.tavern-glass.glass-old_fashioned,
+.tavern-glass.glass-old_fashioned2 {
+    width: 95px;
+    height: 70px;
+    border-radius: 6px;
+}
+
+.tavern-glass.glass-rocks_tall {
+    width: 80px;
+    height: 120px;
+    border-radius: 6px;
+}
+
+.tavern-glass.glass-mug {
+    width: 100px;
+    height: 105px;
+    border-radius: 8px;
+}
+
+.tavern-glass.glass-tumbler {
+    width: 85px;
+    height: 100px;
+    border-radius: 5px;
+}
+
+.tavern-glass.glass-flute {
+    width: 55px;
+    height: 130px;
+    border-radius: 30px 30px 3px 3px / 60px 60px 3px 3px;
+}
+
+.tavern-glass.glass-bulb {
+    width: 80px;
+    height: 120px;
+    border-radius: 40px 40px 15px 15px;
+}
+
+.tavern-glass.glass-latte {
+    width: 90px;
+    height: 85px;
+    border-radius: 0 0 45px 45px / 0 0 22px 22px;
+}
+
+.tavern-glass.glass-tea_glass {
+    width: 80px;
+    height: 95px;
+    border-radius: 3px 3px 40px 40px / 3px 3px 15px 15px;
+}
+
+.tavern-glass.glass-ceramic {
+    width: 90px;
+    height: 75px;
+    border-radius: 6px;
+    border-color: rgba(139, 90, 43, 0.4);
+    background: rgba(139, 90, 43, 0.1);
+}
+
+.tavern-glass.glass-dessert {
+    width: 85px;
+    height: 120px;
+    border-radius: 0 0 45px 45px / 0 0 18px 18px;
+}
+
+.tavern-glass.glass-dessert .tavern-pencil-svg {
+    width: 104%;
+    height: 104%;
+    left: -2%;
+    top: -2%;
+}
+
+.tavern-glass.glass-gaiwan {
+    width: 95px;
+    height: 60px;
+    border-radius: 50% 50% 10% 10% / 60% 60% 10% 10%;
+}
+
+.tavern-glass.glass-zisha {
+    width: 85px;
+    height: 65px;
+    border-radius: 5px;
+    border-color: rgba(101, 67, 33, 0.5);
+    background: rgba(101, 67, 33, 0.15);
+}
+
+.tavern-glass.glass-lotus {
+    width: 95px;
+    height: 65px;
+    border-radius: 50% 50% 20% 20% / 60% 60% 20% 20%;
+}
+
+.tavern-glass.glass-lotus .tavern-pencil-svg {
+    width: 104%;
+    height: 104%;
+    left: -2%;
+    top: -2%;
+}
+
+.tavern-glass.glass-tequila {
+    width: 70px;
+    height: 100px;
+    border-radius: 0 0 35px 35px / 0 0 12px 12px;
+}
+
+.tavern-glass.glass-highball2 {
+    width: 75px;
+    height: 130px;
+    border-radius: 4px 4px 8px 8px;
+}
+
+.modal-drink-preview {
+    width: 100%;
+    height: 220px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 16px 0;
+}
+
+.modal-drink-preview .tavern-glass {
+    transform: scale(1.8);
+}
+
+.carousel-card-name-en {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-bottom: 8px;
+}
+
+.carousel-card-name-cn {
+    font-size: 16px;
+    letter-spacing: 4px;
+    color: var(--text);
+    margin-bottom: 14px;
+}
+
+.carousel-card-type {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: #999;
+    margin-bottom: 16px;
+}
+
+.carousel-card-bartender {
+    font-size: 13px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+}
+
+.carousel-card-date {
+    font-size: 11px;
+    color: #777;
+    margin-top: 6px;
+}
+
+.carousel-card.locked {
+    background: rgba(30, 30, 30, 0.95);
+    border-color: rgba(100, 100, 100, 0.3);
+    opacity: 0.7;
+}
+
+.carousel-card.locked .carousel-card-icon {
+    filter: grayscale(1);
+    opacity: 0.5;
+}
+
+.carousel-card.locked .carousel-card-name-en {
+    color: #666;
+}
+
+.carousel-card.locked .carousel-card-name-cn {
+    color: #555;
+}
+
+.carousel-card.locked .carousel-card-type {
+    color: #444;
+}
+
+.locked-icon {
+    font-size: 40px !important;
+    opacity: 0.4 !important;
+    filter: none !important;
+}
+
+.carousel-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--text);
+    font-size: 24px;
+    cursor: pointer;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    font-family: serif;
+    line-height: 1;
+    padding-bottom: 4px;
+}
+
+.carousel-btn:hover {
+    background: rgba(255, 200, 100, 0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.carousel-btn.prev {
+    left: 8px;
+}
+
+.carousel-btn.next {
+    right: 8px;
+}
+
+.carousel-dots {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 16px;
+    margin-bottom: 8px;
+    z-index: 20;
+}
+
+.carousel-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.carousel-dot.active {
+    background: var(--accent);
+    width: 24px;
+    border-radius: 4px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-dim);
+}
+
+.empty-state p {
+    font-size: 14px;
+    letter-spacing: 2px;
+    line-height: 2;
+}
+
+.token-info {
+    margin-top: 32px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid #222;
+    font-size: 12px;
+    color: #555;
+    letter-spacing: 1px;
+    text-align: center;
+    word-break: break-all;
+}
+
+/* ========== 酒详情弹窗 ========== */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+    overflow-y: auto;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.modal-overlay.active {
+    display: flex;
+    opacity: 1;
+}
+
+.modal-content {
+    background: #111;
+    border: 1px solid #333;
+    max-width: 560px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 40px 32px;
+    position: relative;
+    transform: translateY(20px);
+    transition: transform 0.3s ease;
+}
+
+.modal-overlay.active .modal-content {
+    transform: translateY(0);
+}
+
+.modal-close {
+    position: absolute;
+    top: 16px;
+    right: 20px;
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 24px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: color 0.3s ease;
+}
+
+.modal-close:hover {
+    color: var(--accent);
+}
+
+/* ========== 动画 ========== */
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+@keyframes liquidWave {
+    0%, 100% { transform: scaleX(1); }
+    50% { transform: scaleX(1.05); }
+}
+
+@keyframes iceDrop {
+    0% { opacity: 0; transform: translateY(-40px) rotate(0deg); }
+    70% { opacity: 1; transform: translateY(0) rotate(10deg); }
+    85% { transform: translateY(-8px) rotate(5deg); }
+    100% { opacity: 1; transform: translateY(0) rotate(8deg); }
+}
+
+@keyframes stir {
+    0% { opacity: 0; transform: translateX(-50%) rotate(0deg); }
+    50% { opacity: 1; transform: translateX(-50%) rotate(15deg); }
+    100% { opacity: 1; transform: translateX(-50%) rotate(-15deg); }
+}
+
+/* ========== 响应式 ========== */
+
+/* ==========================================================================
+   STATISTICS DETAIL MODALS (常驻调酒师 & 本馆风味)
+   ========================================================================== */
+
+/* 1. Stat Cards interactive feedback */
+.stat-card {
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+
+
+.stat-card:active {
+    transform: scale(0.97);
+    border-color: rgba(232, 184, 109, 0.5);
+}
+
+/* 2. Stats Empty State */
+.stats-empty {
+    text-align: center;
+    color: var(--text-muted, #888);
+    padding: 40px 20px;
+    font-size: 14px;
+    letter-spacing: 1px;
+}
+
+/* 3. Bartender Ledger (Guest Book Ledger Style) */
+.bartender-ledger {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 45vh;
+    overflow-y: auto;
+    padding-right: 4px;
+    margin-top: 15px;
+}
+
+/* Custom scrollbar for stats list */
+.bartender-ledger::-webkit-scrollbar,
+.stats-modal-body::-webkit-scrollbar {
+    width: 4px;
+}
+.bartender-ledger::-webkit-scrollbar-thumb,
+.stats-modal-body::-webkit-scrollbar-thumb {
+    background: rgba(232, 184, 109, 0.3);
+    border-radius: 2px;
+}
+
+.ledger-item {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: all 0.25s ease;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.ledger-item.clickable {
+    cursor: pointer;
+}
+
+
+
+.ledger-item.clickable:active {
+    transform: scale(0.99);
+    background: rgba(232, 184, 109, 0.08);
+}
+
+.ledger-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: #888;
+}
+
+.ledger-bartender {
+    font-family: var(--font-accent);
+    color: var(--accent, #e8b86d);
+    font-weight: 500;
+}
+
+.ledger-date {
+    font-family: monospace;
+    opacity: 0.8;
+}
+
+.ledger-drink {
+    font-size: 15px;
+    color: #eee;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+/* 4. Flavor Profile Styling */
+.stats-modal-body {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.flavor-profile-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    margin-top: 15px;
+    padding-bottom: 20px;
+}
+
+.flavor-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.flavor-section-title {
+    font-size: 12px;
+    color: var(--accent, #e8b86d);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Signature Drink Box */
+.signature-drink-box {
+    background: linear-gradient(135deg, rgba(232, 184, 109, 0.08) 0%, rgba(232, 184, 109, 0.02) 100%);
+    border: 1px dashed rgba(232, 184, 109, 0.3);
+    border-radius: 16px;
+    padding: 18px;
+    text-align: center;
+    transition: all 0.3s ease;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+
+
+.signature-drink-box:active {
+    transform: scale(0.99);
+}
+
+.sig-name {
+    font-size: 18px;
+    font-weight: bold;
+    color: #fff;
+    margin-bottom: 6px;
+    letter-spacing: 1px;
+}
+
+.sig-desc {
+    font-size: 12px;
+    color: #aaa;
+    letter-spacing: 0.5px;
+}
+
+/* Popular Ranking List */
+.ranking-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.ranking-item {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: all 0.25s ease;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.ranking-item.clickable {
+    cursor: pointer;
+}
+
+
+
+.ranking-item.clickable:active {
+    transform: scale(0.99);
+}
+
+.ranking-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 14px;
+}
+
+.rank-num {
+    width: 20px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-family: monospace;
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+.ranking-item:nth-child(1) .rank-num {
+    background: #e8b86d;
+    color: #121212;
+}
+
+.ranking-item:nth-child(2) .rank-num {
+    background: rgba(232, 184, 109, 0.7);
+    color: #121212;
+}
+
+.ranking-item:nth-child(3) .rank-num {
+    background: rgba(232, 184, 109, 0.4);
+    color: #fff;
+}
+
+.rank-name {
+    flex-grow: 1;
+    color: #eee;
+    font-weight: 500;
+}
+
+.rank-count {
+    color: var(--accent, #e8b86d);
+    font-size: 13px;
+    font-weight: bold;
+}
+
+/* Progress bar style */
+.rank-bar-bg {
+    height: 4px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.rank-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent, #e8b86d) 0%, rgba(232, 184, 109, 0.3) 100%);
+    border-radius: 2px;
+    transition: width 0.8s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+/* DNA Tags Grid */
+.dna-tags-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.dna-tag-pill {
+    background: rgba(232, 184, 109, 0.06);
+    border: 1px solid rgba(232, 184, 109, 0.15);
+    border-radius: 50px;
+    padding: 6px 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    transition: all 0.25s ease;
+}
+
+
+
+.dna-tag-name {
+    color: #eee;
+}
+
+.dna-tag-count {
+    font-size: 11px;
+    font-weight: bold;
+    color: var(--accent, #e8b86d);
+    background: rgba(232, 184, 109, 0.15);
+    padding: 2px 6px;
+    border-radius: 10px;
+}
+
+/* Override Result Screen / Modal Action Buttons to look exactly like Private Tavern Buttons */
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 24px;
+    padding-bottom: 24px;
+    width: 100%;
+}
+
+.action-btn {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: linear-gradient(135deg, rgba(212, 165, 116, 0.15), rgba(255, 200, 100, 0.05)) !important;
+    border: 1px solid var(--accent) !important;
+    color: var(--accent) !important;
+    font-family: 'Cormorant Garamond', serif !important;
+    font-size: 15px !important;
+    letter-spacing: 6px !important;
+    padding: 16px 32px !important;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    text-align: center;
+    width: 100% !important;
+    border-radius: 0 !important; /* Rectangular as requested! */
+}
+
+.action-btn:hover {
+    background: linear-gradient(135deg, rgba(212, 165, 116, 0.25), rgba(255, 200, 100, 0.1)) !important;
+}
+
+.action-btn.secondary {
+    background: transparent !important;
+    border: 1px solid rgba(255, 200, 100, 0.3) !important;
+    color: var(--text-dim) !important;
+}
+
+.action-btn.secondary:hover {
+    border-color: var(--accent) !important;
+    color: var(--accent) !important;
+}
+
+/* ==========================================================================
+   CUSTOM FLOATING TOAST NOTIFICATION (WeChat & Mobile Browser share fallback)
+   ========================================================================== */
+#custom-toast {
+    position: fixed;
+    bottom: 12%;
+    left: 50%;
+    transform: translate(-50%, 20px);
+    z-index: 99999;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    width: 85%;
+    max-width: 320px;
+}
+
+#custom-toast.show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+    pointer-events: auto;
+}
+
+#custom-toast .toast-content {
+    background: rgba(20, 16, 12, 0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(232, 184, 109, 0.3);
+    padding: 14px 18px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(232, 184, 109, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+#custom-toast .toast-icon {
+    font-size: 18px;
+}
+
+#custom-toast .toast-text {
+    font-size: 13px;
+    color: var(--accent, #e8b86d);
+    font-family: var(--font-accent), "Songti SC", "SimSun", serif;
+    letter-spacing: 0.5px;
+    line-height: 1.5;
+    text-align: left;
+}
+
+/* ==========================================================================
+   INSTANT TRANSITION DISABLE UTILITY (For seamless modal switching)
+   ========================================================================== */
+.no-transition, 
+.no-transition::before,
+.no-transition::after {
+    transition: none !important;
+    animation: none !important;
+}
+
+/* ==========================================================================
+   WECHAT SHARE GUIDE OVERLAY (For premium WeChat sharing guidance)
+   ========================================================================== */
+#wechat-share-guide {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(10, 8, 6, 0.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 100000;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    pointer-events: auto;
+}
+
+#wechat-share-guide.show {
+    display: block;
+    opacity: 1;
+}
+
+#wechat-share-guide .guide-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 30px;
+    box-sizing: border-box;
+}
+
+#wechat-share-guide .guide-arrow-svg {
+    position: absolute;
+    top: 15px;
+    right: 25px;
+    width: 70px;
+    height: 70px;
+    animation: guideArrowBounce 1.2s infinite alternate ease-in-out;
+}
+
+#wechat-share-guide .guide-text-box {
+    background: rgba(22, 18, 14, 0.95);
+    border: 1px solid rgba(232, 184, 109, 0.25);
+    padding: 30px 24px;
+    border-radius: 16px;
+    max-width: 320px;
+    text-align: center;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+    transform: translateY(20px);
+    transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.15);
+}
+
+#wechat-share-guide.show .guide-text-box {
+    transform: translateY(0);
+}
+
+#wechat-share-guide .guide-title {
+    font-size: 18px;
+    color: var(--accent, #e8b86d);
+    font-family: var(--font-accent), "Songti SC", "SimSun", serif;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+
+#wechat-share-guide .guide-desc {
+    font-size: 14px;
+    color: #eee;
+    line-height: 1.8;
+    margin-bottom: 12px;
+    text-align: left;
+    letter-spacing: 0.5px;
+}
+
+#wechat-share-guide .guide-desc strong {
+    color: var(--accent, #e8b86d);
+    font-weight: 600;
+}
+
+#wechat-share-guide .guide-footer {
+    font-size: 11px;
+    color: #666;
+    margin-top: 24px;
+    letter-spacing: 1px;
+}
+
+@keyframes guideArrowBounce {
+    0% {
+        transform: translate(0, 0) scale(1);
+    }
+    100% {
+        transform: translate(10px, -10px) scale(1.15);
+    }
+}
+
+
+

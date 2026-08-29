@@ -1,0 +1,258 @@
+<!-- pages/tavern/tavern.wxml —— 原版 tavern.html 平移 -->
+<view class="container">
+
+    <!-- 酒馆页 -->
+    <view id="tavern-screen" class="screen">
+        <view class="tavern-container">
+            <view class="tavern-header">
+                <view class="tavern-title">PRIVATE TAVERN</view>
+                <view class="tavern-subtitle">高一点小酒馆</view>
+            </view>
+
+            <view class="tavern-count" id="tavern-count">
+                已收集 <text class="collected-count">{{collectedCount}}</text> / {{totalRecipes}} 杯
+            </view>
+
+            <!-- 轮播 -->
+            <view class="drink-carousel" id="drink-carousel">
+                <view class="carousel-track" id="carousel-track">
+                    <block wx:for="{{drinks}}" wx:key="recipe_id" wx:for-index="idx">
+                        <view class="carousel-card {{item.collected?'':'locked'}} {{idx===carouselIndex?'active':idx===carouselIndex-1?'prev':idx===carouselIndex+1?'next':idx<carouselIndex-1?'hidden-left':'hidden-right'}}"
+                              data-idx="{{idx}}"
+                              bindtap="onCardTap">
+                            <view class="carousel-drink-preview">
+                                <block wx:if="{{item.collected}}">
+                                    <view class="tavern-glass {{item.glassClass}}">
+                                        <canvas type="2d" id="tavern-canvas-{{idx}}" style="width:100%;height:100%;"></canvas>
+                                        <view class="tavern-glass-shine"></view>
+                                    </view>
+                                </block>
+                                <block wx:else>
+                                    <view class="carousel-card-icon locked-icon">🔒</view>
+                                </block>
+                            </view>
+                            <view class="carousel-card-name-en">{{item.collected?item.english_name:'???'}}</view>
+                            <view class="carousel-card-name-cn">{{item.collected?item.drink_name:'未解锁'}}</view>
+                            <view class="carousel-card-bartender">{{item.collected?'by '+item.bartender_name:''}}</view>
+                        </view>
+                    </block>
+                </view>
+                <button class="carousel-btn prev" catchtap="onPrevDrink">‹</button>
+                <button class="carousel-btn next" catchtap="onNextDrink">›</button>
+            </view>
+            <view class="carousel-dots" id="carousel-dots">
+                <block wx:for="{{drinks}}" wx:key="recipe_id" wx:for-index="idx">
+                    <view class="carousel-dot {{idx===carouselIndex?'active':''}}" data-idx="{{idx}}" catchtap="onGoToDrink"></view>
+                </block>
+            </view>
+
+            <!-- 统计卡片 -->
+            <view class="stats-board" id="stats-board">
+                <view class="stat-card" bindtap="onOpenBartendersModal">
+                    <view class="stat-icon">🥂</view>
+                    <view class="stat-label">常驻调酒师</view>
+                    <view class="stat-value" id="top-bartender-name">{{topBartenderName}}</view>
+                    <view class="stat-detail" id="top-bartender-count">{{topBartenderCount}}</view>
+                </view>
+                <view class="stat-card" bindtap="onOpenFlavorModal">
+                    <view class="stat-icon">✨</view>
+                    <view class="stat-label">本馆风味</view>
+                    <view class="stat-value" id="top-drink-name">{{topDrinkName}}</view>
+                    <view class="stat-detail" id="top-drink-percent">{{topDrinkPercent}}</view>
+                </view>
+            </view>
+
+            <!-- 空状态 -->
+            <view class="empty-state" id="empty-state" style="display:{{emptyShown?'block':'none'}};">
+                <text>酒馆还空着...</text>
+                <text style="margin-top:16px; color:#666;">
+把链接分享给朋友
+让他们为你调一杯酒吧</text>
+            </view>
+
+            <!-- 操作按钮 -->
+            <view class="tavern-actions">
+                <button class="tavern-action-btn primary" bindtap="onCopyInviteLink">
+                    <text class="action-icon">🔍</text>
+                    <text class="action-text">找人调酒</text>
+                </button>
+                <button class="tavern-action-btn" bindtap="onRefreshTavern">
+                    <text class="action-icon">🔄</text>
+                    <text class="action-text">刷新酒馆</text>
+                </button>
+                <navigator class="tavern-action-btn" url="/pages/home/home" open-type="switchTab">
+                    <text class="action-icon">🏠</text>
+                    <text class="action-text">返回首页</text>
+                </navigator>
+            </view>
+        </view>
+    </view>
+
+    <!-- 酒详情弹窗 -->
+    <view class="modal-overlay" id="drink-modal" style="display:{{drinkModalShown?'block':'none'}};" catchtap="onCloseDrinkModal">
+        <view class="modal-content" catchtap="noop">
+            <view class="modal-close" bindtap="onCloseDrinkModal">×</view>
+            <view class="result-header">
+                <view class="result-label">Cocktail Detail</view>
+                <view class="drink-name-en" id="modal-name-en">{{modalDrink.english_name || '—'}}</view>
+                <view class="drink-name-cn" id="modal-name-cn">{{modalDrink.drink_name || '—'}}</view>
+                <view class="drink-type" id="modal-type">{{modalDrink.drink_type || '—'}}</view>
+            </view>
+
+            <view class="modal-drink-preview" id="modal-drink-preview">
+                <view class="tavern-glass {{modalDrink.glassClass}}">
+                    <canvas type="2d" id="modal-canvas" style="width:100%;height:100%;"></canvas>
+                    <view class="tavern-glass-shine"></view>
+                </view>
+            </view>
+
+            <view class="bartender-info">
+                <text>Created by </text><text class="bartender-name">{{modalDrink.bartender_name || '—'}}</text>
+                <text> · {{modalDrink.createdLabel || '—'}}</text>
+            </view>
+
+            <view class="section">
+                <view class="section-title">配方 / Recipe</view>
+                <view class="ingredients-list" id="modal-ingredients">
+                    <block wx:for="{{modalDrink.ingredients}}" wx:key="name">
+                        <view class="ingredient-item">
+                            <text class="ingredient-emoji">{{item.emoji}}</text>
+                            <view class="ingredient-content">
+                                <text class="ingredient-name">{{item.name}}</text>
+                                <text class="ingredient-meaning">{{item.meaning}}</text>
+                            </view>
+                        </view>
+                    </block>
+                </view>
+            </view>
+
+            <view class="section">
+                <view class="section-title">酒精度 / Alcohol</view>
+                <view class="story-text" id="modal-story">{{modalDrink.story || '—'}}</view>
+            </view>
+        </view>
+    </view>
+
+    <!-- 锁屏 -->
+    <view id="tavern-lock-screen" class="modal-overlay" style="display:{{lockShown?'block':'none'}};background:rgba(10,8,6,0.96);backdrop-filter:blur(20px);z-index:10000;">
+        <view class="modal-content" style="max-width:380px;text-align:center;border:1px solid rgba(232,184,109,0.25);background:rgba(22,18,14,0.95);box-shadow:0 15px 40px rgba(0,0,0,0.7);transform:none;">
+            <view class="result-header" style="margin-bottom:24px;">
+                <text style="font-size:40px;margin-bottom:12px;">🔒</text>
+                <view class="result-label" style="letter-spacing:2px;">PRIVATE TAVERN</view>
+                <view class="drink-name-en" style="font-size:24px;margin-bottom:8px;color:#e8b86d;">酒馆已打样</view>
+                <view class="drink-name-cn" style="font-size:13px;color:#888;letter-spacing:1px;">高一点还没来开门呢</view>
+            </view>
+
+            <text style="font-size:12px;color:#ccc;line-height:1.6;margin-bottom:20px;letter-spacing:0.5px;">提示：问问高一点👀</text>
+
+            <view style="margin-bottom:24px;">
+                <input type="text" id="lock-token-input"
+                       placeholder="输入暗号"
+                       value="{{tokenInput}}"
+                       bindinput="onTokenInput"
+                       bindconfirm="onUnlock"
+                       style="width:100%;padding:12px 16px;background:rgba(0,0,0,0.4);border:1px solid rgba(232,184,109,0.3);border-radius:8px;color:#fff;font-size:14px;text-align:center;letter-spacing:1px;" />
+            </view>
+
+            <view style="display:flex;gap:12px;">
+                <navigator class="btn" url="/pages/home/home" style="flex:1;padding:12px;border-radius:8px;background:rgba(255,255,255,0.05);border:1px solid #333;color:#bbb;font-size:13px;text-align:center;letter-spacing:1px;">返回首页</navigator>
+                <button bindtap="onUnlock" style="flex:1;padding:12px;border-radius:8px;background:linear-gradient(135deg,rgba(232,184,109,0.2),rgba(255,200,100,0.1));border:1px solid rgba(232,184,109,0.4);color:#e8b86d;font-size:13px;font-weight:600;letter-spacing:1px;">进入酒馆</button>
+            </view>
+        </view>
+    </view>
+
+    <!-- 统计详情弹窗 -->
+    <view class="modal-overlay" id="stats-modal" style="display:{{statsModalShown?'block':'none'}};" catchtap="onCloseStatsModal">
+        <view class="modal-content" catchtap="noop">
+            <view class="modal-close" bindtap="onCloseStatsModal">×</view>
+            <view class="result-header">
+                <view class="result-label" id="stats-modal-label">{{statsModalLabel}}</view>
+                <view class="drink-name-en" id="stats-modal-title">{{statsModalTitle}}</view>
+                <view class="drink-name-cn" id="stats-modal-subtitle">{{statsModalSubtitle}}</view>
+            </view>
+
+            <view class="stats-modal-body" id="stats-modal-body">
+                <!-- bartender 模式 -->
+                <block wx:if="{{statsMode==='bartender'}}">
+                    <block wx:if="{{statsData.length===0}}">
+                        <view class="stats-empty">暂无调酒师历史记录</view>
+                    </block>
+                    <block wx:else>
+                        <view class="flavor-section">
+                            <view class="flavor-section-title">🏆 TOP 3 调酒师</view>
+                            <view class="ranking-list">
+                                <block wx:for="{{statsData.slice(0,3)}}" wx:key="name">
+                                    <view class="ranking-item">
+                                        <view class="ranking-info">
+                                            <text class="rank-num">{{index+1}}</text>
+                                            <text class="rank-name">{{item.name}}</text>
+                                            <text class="rank-count">{{item.count}}杯</text>
+                                        </view>
+                                        <view class="rank-bar-bg">
+                                            <view class="rank-bar-fill" style="width:{{item.percent}}%;"></view>
+                                        </view>
+                                    </view>
+                                </block>
+                            </view>
+                        </view>
+                        <view class="flavor-section">
+                            <view class="flavor-section-title">📅 所有调酒记录</view>
+                            <scroll-view scroll-y="true" style="max-height:32vh;">
+                                <block wx:for="{{allRecords}}" wx:key="id">
+                                    <view class="ledger-item" data-id="{{item.drink_id}}" bindtap="onOpenDrinkFromLedger">
+                                        <text class="ledger-bartender">🥂 <text style="color:#e8b86d;font-weight:600;">{{item.drink_name}}</text> by {{item.bartender_name}}</text>
+                                        <text class="ledger-date">{{item.dateLabel}}</text>
+                                    </view>
+                                </block>
+                            </scroll-view>
+                        </view>
+                    </block>
+                </block>
+                <!-- flavor 模式 -->
+                <block wx:if="{{statsMode==='flavor'}}">
+                    <block wx:if="{{flavorData.length===0}}">
+                        <view class="stats-empty">暂无风味分析记录</view>
+                    </block>
+                    <block wx:else>
+                        <view class="flavor-section">
+                            <view class="flavor-section-title">👑 本馆招牌饮品</view>
+                            <view class="signature-drink-box" style="cursor:pointer;">
+                                <text class="sig-name">{{flavorData[0].name}}</text>
+                                <text class="sig-desc">占据了本馆酒柜的 {{flavorData[0].percent}}%（累计调制 {{flavorData[0].count}} 次）</text>
+                            </view>
+                        </view>
+                        <view class="flavor-section">
+                            <view class="flavor-section-title">🏆 热门饮品排行</view>
+                            <view class="ranking-list">
+                                <block wx:for="{{flavorData}}" wx:for-index="idx" wx:key="name">
+                                    <view class="ranking-item">
+                                        <view class="ranking-info">
+                                            <text class="rank-num">{{idx+1}}</text>
+                                            <text class="rank-name">{{item.name}}</text>
+                                            <text class="rank-count">{{item.count}}次</text>
+                                        </view>
+                                        <view class="rank-bar-bg">
+                                            <view class="rank-bar-fill" style="width:{{item.percent}}%;"></view>
+                                        </view>
+                                    </view>
+                                </block>
+                            </view>
+                        </view>
+                        <view wx:if="{{tagData.length>0}}" class="flavor-section">
+                            <view class="flavor-section-title">✨ 风味基因印记</view>
+                            <view class="dna-tags-grid">
+                                <block wx:for="{{tagData}}" wx:key="tag">
+                                    <view class="dna-tag-pill">
+                                        <text class="dna-tag-name">{{item.tag}}</text>
+                                        <text class="dna-tag-count">{{item.count}}次</text>
+                                    </view>
+                                </block>
+                            </view>
+                        </view>
+                    </block>
+                </block>
+            </view>
+        </view>
+    </view>
+
+</view>

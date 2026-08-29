@@ -65,6 +65,18 @@ async function matchDrinkRecipe(tagList) {
   };
 }
 
+// P0-3: 显式注册 HEAD /api/questions 探活路由，保证 checkBackend HEAD 请求稳定响应
+//        (Express 的 app.get 默认不处理 HEAD，serverless 环境更易丢失)
+app.head('/api/questions', async (_req, res) => {
+  try {
+    const { error } = await db.from('questions').select('id', { head: true, limit: 1 });
+    if (error) return res.status(503).end();
+    res.status(200).end();
+  } catch (_err) {
+    res.status(503).end();
+  }
+});
+
 // 1. 获取问答库 API
 app.get('/api/questions', async (req, res) => {
   try {
@@ -316,22 +328,22 @@ app.get('/api/tavern/:token', async (req, res) => {
   try {
     const { token } = req.params;
     
-    // 获取所有酒谱模板
-    const { data: recipes, error: rError } = await db
-      .from('drink_recipes')
-      .select('*')
-      .order('id', { ascending: true });
+    // P1-4: 配方 & 用户酒记录 —— 互不依赖，Promise.all 并发，延迟砍半
+    const [
+      { data: recipes, error: rError },
+      { data: drinks,  error: dError }
+    ] = await Promise.all([
+      db.from('drink_recipes')
+        .select('*')
+        .order('id', { ascending: true }),
+      db.from('drinks')
+        .select('*, drink_recipes(*)')
+        .eq('owner_token', token)
+        .eq('site_id', APP_SITE_ID)
+        .order('created_at', { ascending: false })
+    ]);
 
     if (rError) throw rError;
-
-    // 获取该 token 下的所有解锁过的酒，并联合查询酒谱详情
-    const { data: drinks, error: dError } = await db
-      .from('drinks')
-      .select('*, drink_recipes(*)')
-      .eq('owner_token', token)
-      .eq('site_id', APP_SITE_ID)
-      .order('created_at', { ascending: false });
-
     if (dError) throw dError;
 
     const collectedMap = {};
@@ -385,32 +397,82 @@ app.get('/api/tavern/:token', async (req, res) => {
 });
 
 // 7. 获取单杯特配酒解锁故事详情 API
+//    会返回当前配方（recipe_id）下所有调酒师的记录，按时间倒序排列，方便详情页逐一显示
 app.get('/api/tavern/:token/detail/:id', async (req, res) => {
   try {
-    const { token, id } = req.params;
-    
-    const { data: drink, error: dError } = await db
-      .from('drinks')
-      .select('*, drink_recipes(*)')
-      .eq('id', id)
-      .eq('owner_token', token)
-      .eq('site_id', APP_SITE_ID)
-      .single();
+    const { token, id } = req.params; // id 是业务 drink_id(hex字符串)，老数据 fallback 是 BIGINT 主键字符串
 
-    if (dError || !drink) {
+    // P1-5: 先用 drink_id 列查（业务列，存 hex）；如未命中，再兜底按 id 主键列查（兼容小程序老数据无 drink_id 情况）
+    let drink = null;
+    let dError = null;
+
+    // 7.1a 优先 drink_id 业务字段（新数据都是 hex 字符串，走这里不会 22P02）
+    {
+      const { data, error } = await db
+        .from('drinks')
+        .select('*, drink_recipes(*)')
+        .eq('drink_id', id)
+        .eq('owner_token', token)
+        .eq('site_id', APP_SITE_ID)
+        .limit(1)
+        .maybeSingle();
+      if (!error && data) { drink = data; }
+      else { dError = error; }
+    }
+
+    // 7.1b 兜底：老数据无 drink_id，只剩 bigint 主键 —— 仅当 id 是纯数字时才尝试，避免 hex 触发 22P02
+    if (!drink && /^\d+$/.test(id)) {
+      const { data, error } = await db
+        .from('drinks')
+        .select('*, drink_recipes(*)')
+        .eq('id', id)
+        .eq('owner_token', token)
+        .eq('site_id', APP_SITE_ID)
+        .limit(1)
+        .maybeSingle();
+      if (data) { drink = data; dError = error; }
+      else if (!drink && error) { dError = error; }
+    }
+
+    if (dError && !drink) {
+      return res.status(404).json({ success: false, error: '酒不存在或无权访问', detail: dError.message });
+    }
+    if (!drink) {
       return res.status(404).json({ success: false, error: '酒不存在或无权访问' });
     }
 
     const recipe = drink.drink_recipes;
+    const recipeId = recipe.id;
+
+    // 7.2 拉取同一配方下、同一 owner_token 下的所有调酒记录（按时间倒序），得到调酒师名单
+    const { data: siblings, error: sError } = await db
+      .from('drinks')
+      .select('id, drink_id, bartender_name, created_at')
+      .eq('recipe_id', recipeId)
+      .eq('owner_token', token)
+      .eq('site_id', APP_SITE_ID)
+      .order('created_at', { ascending: false });
+
+    if (sError) throw sError;
+
+    const bartenders = (siblings || []).map(s => ({
+      drink_id: s.id,                      // 兼容前端历史 openDrinkDetail 的 oldId 路径
+      drink_business_id: s.drink_id || String(s.id), // P1-5: 前端后续只看这个业务 id，回传给 detail 用 drink_id 列精确匹配
+      bartender_name: s.bartender_name,
+      created_at: s.created_at
+    }));
 
     res.json({
       success: true,
       data: {
         drink_id: drink.id,
-        bartender_name: drink.bartender_name,
-        created_at: drink.created_at,
+        drink_business_id: drink.drink_id || String(drink.id),
+        // 保留最新的 bartender/created_at 作为主字段（兼容任何老逻辑）
+        bartender_name: bartenders.length ? bartenders[0].bartender_name : drink.bartender_name,
+        created_at: bartenders.length ? bartenders[0].created_at : drink.created_at,
         answers: Array.isArray(drink.answers) ? drink.answers : JSON.parse(drink.answers || '[]'),
         tags: Array.isArray(drink.tags) ? drink.tags : JSON.parse(drink.tags || '[]'),
+        bartenders: bartenders,
         recipe: {
           id: recipe.id,
           drink_name: recipe.drink_name,

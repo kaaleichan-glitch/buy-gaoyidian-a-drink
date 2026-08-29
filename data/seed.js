@@ -1,7 +1,11 @@
 const { db } = require('../database');
 const { QUESTIONS, DRINK_RECIPES } = require('./seedData');
 
+/** 记忆化标记：成功完成一次播种检查后，冷启动不再重复 COUNT 查询。 */
+let seedDone = false;
+
 async function seedDatabase() {
+  if (seedDone) return; // P2-7: 短路，避免每次冷启动争抢 Supabase 连接
   try {
     // 1. 检查并播种问题库
     const { count: questionCount, error: qError } = await db
@@ -55,6 +59,8 @@ async function seedDatabase() {
     } else {
       console.log(`📡 Supabase 鸡尾酒配方库已存在 (${recipeCount} 个配方)，跳过播种`);
     }
+
+    seedDone = true; // 两轮检查+播种都通过才置位
   } catch (err) {
     console.error('🔴 Supabase 数据库播种失败:', err.message);
   }

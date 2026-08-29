@@ -5,12 +5,26 @@ const state = {
     bartenderName: '',
     result: null,
     ownerToken: null,
-    useBackend: true
+    useBackend: true  // 乐观为 true，只有明确服务端返回非超时错误时才降级
 };
 
 let audioCtx = null;
 let completeSound = null;
 let mixingAnimationTimer = null;
+
+/* ======================================================
+ * 通用超时 helper（与 tavern.js 保持一致）
+ * ====================================================== */
+function fetchWithTimeout(url, opts = {}) {
+    const timeoutMs = opts.timeoutMs || 5000;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+    return fetch(url, { ...opts, signal: ctrl.signal })
+        .finally(() => clearTimeout(timer));
+}
+function isAbortError(err) {
+    return err && (err.name === 'AbortError' || (err.message && err.message.includes('abort')));
+}
 
 function initSound() {
     if (!completeSound) {
@@ -39,10 +53,14 @@ function showScreen(screenId) {
 
 async function checkBackend() {
     try {
-        const res = await fetch('/api/questions', { method: 'HEAD' });
+        const res = await fetchWithTimeout('/api/questions', { method: 'HEAD', timeoutMs: 4000 });
         state.useBackend = res.ok;
     } catch (err) {
-        state.useBackend = false;
+        // 超时/网络错误都乐观保持 true，不让探活失败就影响写入
+        if (isAbortError(err)) {
+            console.warn('checkBackend 超时，仍保留 useBackend=true（乐观策略）');
+        }
+        state.useBackend = true;
     }
 }
 
@@ -122,35 +140,18 @@ async function loadQuestions() {
     migrateLegacyData();
     await checkBackend();
     
-    if (initCloud()) {
-        const token = localStorage.getItem('gaoyidian_tavern_token');
-        if (token) {
-            mergeCloudDrinksToLocal(token);
-        }
-    }
-    
-    // 启动时：先尝试自动补发旧的本地酒（之前 saveDrinkToCloud 都因为字段错误失败了）
-    // 走首选 /api/drinks（Netlify→Supabase 内网可通，比浏览器直连稳定得多）
-    // 异步执行，不阻塞页面
+    // P0-1: 移除浏览器直连 Supabase 的 initCloud / mergeCloudDrinksToLocal 调用
+    //      前端不再直连 supabase.co，只通过后端代理（/api/*）
+    // 启动时：自动补发失败队列里的本地酒（走 /api/drinks 后端中转，不再 syncLocalDrinksToCloud）
     (async () => {
         try {
-            const token = localStorage.getItem('gaoyidian_tavern_token');
             const oldQueue = JSON.parse(localStorage.getItem(FAILED_DRINKS_KEY) || '[]');
-
-            // 1. 先尝试失败队列里积压的（如果有的话）
             if (oldQueue.length) {
-                await retryFailedQueue();
-            }
-
-            // 2. 再做一次历史本地酒的补同步（只补 token 匹配的）
-            if (token && state.useBackend) {
-                const res = await syncLocalDrinksToCloud(token, { verbose: true, site_id: 'default' });
-                if (res && (res.synced > 0 || res.failed > 0)) {
-                    if (res.synced > 0 && res.failed === 0) {
-                        showToast(`已把之前 ${res.synced} 杯酒补发进云端酒馆 ✅`, '🍸');
-                    } else if (res.synced > 0 && res.failed > 0) {
-                        showToast(`${res.synced} 杯补发成功，${res.failed} 杯失败，下次打开再试`, '⚠️');
-                    }
+                const r = await retryFailedQueue();
+                if (r && r.ok > 0 && r.failed === 0) {
+                    showToast(`已把积压的 ${r.ok} 杯酒补发进云端酒馆 ✅`, '🍸');
+                } else if (r && r.failed > 0) {
+                    showToast(`${r.ok} 杯补发成功，${r.failed} 杯仍失败，下次打开再试`, '⚠️');
                 }
             }
         } catch (e) {
@@ -607,7 +608,7 @@ async function startMixing() {
         created_at: new Date().toISOString()
     };
 
-    // 本地先保存一份（UI 无延迟、断网也不会丢），然后异步双路写入云端
+    // 本地先保存一份（UI 无延迟、断网也不会丢），然后异步写入后端 /api/drinks 中转
     {
         const drinks = JSON.parse(localStorage.getItem('gaoyidian_drinks') || '[]');
         const idx = drinks.findIndex(d => (d.drink_id || d.id) === drinkId);
@@ -616,27 +617,24 @@ async function startMixing() {
         localStorage.setItem('gaoyidian_drinks', JSON.stringify(drinks));
     }
 
-    // 首选走后端中转 /api/drinks（Netlify → Supabase 内网可通），失败再直连，两条都败则入失败队列
-    if (state.useBackend || initCloud()) {
-        saveDrinkWithRetry(drinkRecord)
-            .then(sr => {
-                if (sr.ok) {
-                    if (sr.via === 'api') showToast('已存入云端酒馆 ✅<br>换设备登录也能看到啦', '🍸');
-                    else showToast('已存入云端 ✅', '🍸');
-                } else {
-                    showToast('暂时存不到云端，已保留在本地<br>下次打开会自动重试', '⚠️');
-                    // 手动触发一下横幅显示（队列里有东西了）
-                    try {
-                        const pending = JSON.parse(localStorage.getItem(FAILED_DRINKS_KEY) || '[]');
-                        if (pending.length) showDrinkSyncBanner('failed', {
-                            total: pending.length,
-                            sample: (sr.error && sr.error.message) ? sr.error.message.slice(0, 16) : '网络'
-                        });
-                    } catch (_) {}
-                }
-            })
-            .catch(e => console.warn('saveDrinkWithRetry unhandled:', e));
-    }
+    // P0-1: 只走后端 /api/drinks 代理写入，删除浏览器直连 Supabase saveDrinkToCloud 回退路径
+    //      (直连 supabase.co 域在中国 DNS 投毒导致 30s+ 超时，无意义)
+    saveDrinkWithRetry(drinkRecord)
+        .then(sr => {
+            if (sr.ok) {
+                showToast('已存入云端酒馆 ✅<br>换设备登录也能看到啦', '🍸');
+            } else {
+                showToast('暂时存不到云端，已保留在本地<br>下次打开会自动重试', '⚠️');
+                try {
+                    const pending = JSON.parse(localStorage.getItem(FAILED_DRINKS_KEY) || '[]');
+                    if (pending.length) showDrinkSyncBanner('failed', {
+                        total: pending.length,
+                        sample: (sr.error && sr.error.message) ? sr.error.message.slice(0, 16) : '网络'
+                    });
+                } catch (_) {}
+            }
+        })
+        .catch(e => console.warn('saveDrinkWithRetry unhandled:', e));
 
     // 先按本地逻辑构造 resultData（保证动画立刻播放，不依赖网络返回）
     resultData = {
@@ -895,11 +893,12 @@ function showDrinkSyncBanner(status, payload) {
     banner.onclick = () => retryFailedQueue({ interactive: true });
 }
 
-// 尝试用 /api/drinks 写入（首选：Netlify 中转 → Supabase，避开手机到 supabase.co 的直连问题）
+// P0-2 + P0-3: 后端写入（首选）带超时。不再"失败试直连 Supabase"，直接失败入队下次重试即可
 async function saveDrinkViaApi(drinkRecord) {
-    const res = await fetch('/api/drinks', {
+    const res = await fetchWithTimeout('/api/drinks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        timeoutMs: 10000, // 写入给 10 秒，冷启动也基本够了
         body: JSON.stringify({
             // 传 drink_id 也传 id（老字段名兼容），server.js 会按 drink_id 优先入库
             id: drinkRecord.id,
@@ -923,27 +922,16 @@ async function saveDrinkViaApi(drinkRecord) {
     throw err;
 }
 
-// 双路写入：先试 /api/drinks，失败立刻试 saveDrinkToCloud（直连），两条都败 → 入失败队列
+// P0-1: 只用后端代理写入。失败不再回退到浏览器直连 Supabase，直接入失败队列等下次重试
 async function saveDrinkWithRetry(drinkRecord) {
-    let lastErr = null;
     try {
         const r = await saveDrinkViaApi(drinkRecord);
         return { via: 'api', ok: true, response: r };
     } catch (e) {
-        lastErr = e;
-        console.warn('首选写入失败（/api/drinks），回退到直连 Supabase：', e && e.message);
+        console.warn('/api/drinks 写入失败（超时或后端错），入失败队列下次重试：', e && e.message);
+        enqueueFailedDrink(drinkRecord, e);
+        return { via: 'queue', ok: false, error: e };
     }
-    try {
-        if (!initCloud()) throw Object.assign(new Error('云端未初始化'), { code: 'CLOUD_DISABLED' });
-        const r = await saveDrinkToCloud(drinkRecord, { site_id: 'default' });
-        return { via: 'direct', ok: true, response: r };
-    } catch (e2) {
-        lastErr = e2;
-        console.warn('直连写入也失败：', e2 && e2.message);
-    }
-    // 两条都败：入队
-    enqueueFailedDrink(drinkRecord, lastErr);
-    return { via: 'queue', ok: false, error: lastErr };
 }
 
 // 后台自动重试失败队列

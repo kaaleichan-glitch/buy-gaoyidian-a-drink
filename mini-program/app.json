@@ -1,0 +1,15 @@
+{
+  "pages": [
+    "pages/home/home",
+    "pages/tavern/tavern"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#0d0d0d",
+    "navigationBarTitleText": "请高一点喝一杯",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#0d0d0d"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

@@ -1,0 +1,181 @@
+<!-- pages/home/home.wxml —— 原版 index.html 平移 -->
+<view class="container">
+
+    <!-- 首页 -->
+    <view id="home-screen" class="screen {{screen==='home'?'active':''}}">
+        <view class="home-container">
+            <view class="logo-en">BUY HER A DRINK</view>
+            <view class="logo-cn">请 高 一 点 喝 一 杯</view>
+
+            <view class="intro-text">
+                <view>回答关于她的三个问题</view>
+                <view>为她<text class="highlight">调制一杯专属的酒</text></view>
+                <view>存入她的私人酒馆</view>
+            </view>
+
+            <view class="name-input-wrapper">
+                <text class="name-label">🍷 🍸 🍶 🍺…</text>
+                <input type="text" class="name-input" id="bartender-name"
+                       placeholder="调酒师署名" maxlength="20"
+                       value="{{bartenderName}}"
+                       bindinput="onBartenderInput"
+                       bindconfirm="onStartQuiz" />
+            </view>
+
+            <button class="start-btn" id="start-btn" bindtap="onStartQuiz">Let's SHAKE!</button>
+
+            <view class="tavern-entry">
+                <view class="tavern-link" bindtap="onGoTavern">🎉 彩蛋·高一点小酒馆</view>
+            </view>
+        </view>
+    </view>
+
+    <!-- 问答页 -->
+    <view id="quiz-screen" class="screen {{screen==='quiz'?'active':''}}">
+        <view class="quiz-container">
+            <view class="progress-bar">
+                <view class="progress-fill" id="progress-fill" style="width: {{progressPercent}}%"></view>
+            </view>
+            <view class="question-number" id="question-number">QUESTION {{questionIndex + 1}} / {{totalQuestions}}</view>
+            <view class="question-text" id="question-text">💬 {{currentQuestion.question_text}}</view>
+            <view class="options-list" id="options-list">
+                <block wx:for="{{currentQuestion.options}}" wx:key="text" wx:for-index="optIdx">
+                    <button class="option-btn {{selectedOptionIndex===optIdx?'selected':''}}"
+                            style="animation-delay:{{optIdx * 0.1}}s"
+                            data-idx="{{optIdx}}"
+                            bindtap="onSelectOption">
+                        {{item.text}}
+                    </button>
+                </block>
+            </view>
+            <view class="question-footer">
+                <button class="random-btn" bindtap="onRandomizeQuestion">🎲 换一题</button>
+            </view>
+        </view>
+    </view>
+
+    <!-- 调酒动画页 -->
+    <view id="mixing-screen" class="screen {{screen==='mixing'?'active':''}}">
+        <view class="mixing-container">
+            <view class="mixing-title" id="mixing-title">{{mixingTitle}}</view>
+
+            <!-- 酒名信息（动画完成后显示） -->
+            <view class="mixing-result-header" id="mixing-result-header" style="display:{{mixingResultShown?'block':'none'}};">
+                <view class="result-label">Your Cocktail</view>
+                <view class="drink-name-en" id="result-name-en-mixing">{{recipe.english_name || '—'}}</view>
+                <view class="drink-name-cn" id="result-name-cn-mixing">{{recipe.drink_name || '—'}}</view>
+                <view class="drink-type" id="result-type-mixing">{{recipe.drink_type || '—'}}</view>
+            </view>
+
+            <view class="drink-stage">
+                <view class="drink-glass {{glassClass}} {{shakingClass}}" id="drink-glass">
+                    <!-- 小程序无 SVG，用 canvas 画 pencil layers 波浪 + texture -->
+                    <canvas type="2d" id="pencil-canvas" class="pencil-svg" style="width:100%;height:100%;"></canvas>
+                    <view class="drink-liquid" id="drink-liquid"></view>
+                    <view class="ingredients-layer" id="ingredients-layer">
+                        <block wx:for="{{decorations}}" wx:key="key">
+                            <view class="drink-ingredient {{item.cls}}" style="top:{{item.top}}%;left:{{item.left}}%;">
+                                <text>{{item.emoji}}</text>
+                            </view>
+                        </block>
+                    </view>
+                    <view class="glass-shine"></view>
+                </view>
+            </view>
+            <view class="mixing-step" id="mixing-step">{{mixingStepText}}</view>
+
+            <!-- 酒卡详情（动画完成后显示） -->
+            <view class="mixing-card-details" id="mixing-card-details" style="display:{{mixingResultShown?'block':'none'}};">
+                <view class="section">
+                    <view class="section-title">配方 / Recipe</view>
+                    <view class="ingredients-list" id="ingredients-list-mixing">
+                        <block wx:for="{{recipe.ingredients}}" wx:key="name">
+                            <view class="ingredient-item">
+                                <text class="ingredient-emoji">{{item.emoji}}</text>
+                                <view class="ingredient-content">
+                                    <text class="ingredient-name">{{item.name}}</text>
+                                    <text class="ingredient-meaning">{{item.meaning}}</text>
+                                </view>
+                            </view>
+                        </block>
+                    </view>
+                </view>
+
+                <view class="section">
+                    <view class="section-title">酒精度 / Alcohol</view>
+                    <view class="story-text" id="story-text-mixing">{{recipe.story || '—'}}</view>
+                </view>
+
+                <view class="bartender-info">
+                    <text>Created by </text><text class="bartender-name">{{bartenderName}}</text>
+                </view>
+
+                <view class="action-buttons">
+                    <button class="action-btn" open-type="share">
+                        <text class="action-icon">🔗</text>
+                        <text class="action-text">分享酒卡</text>
+                    </button>
+                    <button class="action-btn secondary" bindtap="onRestart">
+                        <text class="action-icon">🍸</text>
+                        <text class="action-text">再调一杯</text>
+                    </button>
+                </view>
+            </view>
+        </view>
+    </view>
+
+    <!-- 结果页 -->
+    <view id="result-screen" class="screen {{screen==='result'?'active':''}}">
+        <view class="result-container" id="drink-card">
+            <view class="result-header">
+                <view class="result-label">Your Cocktail</view>
+                <view class="drink-name-en" id="result-name-en">{{recipe.english_name || '—'}}</view>
+                <view class="drink-name-cn" id="result-name-cn">{{recipe.drink_name || '—'}}</view>
+                <view class="drink-type" id="result-type">{{recipe.drink_type || '—'}}</view>
+            </view>
+
+            <view class="result-drink-preview" id="result-drink-preview">
+                <view class="tavern-glass {{glassClass}}">
+                    <!-- result-canvas TEMP DISABLED -->
+                    <view class="tavern-glass-shine"></view>
+                </view>
+            </view>
+
+            <view class="bartender-info">
+                <text>Created by </text><text class="bartender-name">{{bartenderName}}</text>
+            </view>
+
+            <view class="section">
+                <view class="section-title">配方 / Recipe</view>
+                <view class="ingredients-list" id="ingredients-list">
+                    <block wx:for="{{recipe.ingredients}}" wx:key="name">
+                        <view class="ingredient-item">
+                            <text class="ingredient-emoji">{{item.emoji}}</text>
+                            <view class="ingredient-content">
+                                <text class="ingredient-name">{{item.name}}</text>
+                                <text class="ingredient-meaning">{{item.meaning}}</text>
+                            </view>
+                        </view>
+                    </block>
+                </view>
+            </view>
+
+            <view class="section">
+                <view class="section-title">酒精度 / Alcohol</view>
+                <view class="story-text" id="story-text">{{recipe.story || '—'}}</view>
+            </view>
+
+            <view class="action-buttons">
+                <button class="action-btn" open-type="share">
+                    <text class="action-icon">🔗</text>
+                    <text class="action-text">分享酒卡</text>
+                </button>
+                <button class="action-btn secondary" bindtap="onRestart">
+                    <text class="action-icon">🍸</text>
+                    <text class="action-text">再调一杯</text>
+                </button>
+            </view>
+        </view>
+    </view>
+
+</view>

@@ -2,17 +2,90 @@ const tavernState = {
     token: null,
     drinks: [],
     currentDrink: null,
-    useBackend: true,
+    useBackend: true,  // P0-2: 默认乐观 true，只有明确"非超时"错误才降级
     totalRecipes: 32,
     collectedCount: 0
 };
 
+/* ============================================================
+ * P0-2 + P0-3 通用工具：超时 fetch + 乐观探活
+ * ============================================================ */
+
+/**
+ * 带超时的 fetch 封装。5 秒内不响应即取消，避免冷启动/Supabase 墙让页面永远挂住。
+ * @param {string} url
+ * @param {RequestInit & { timeoutMs?: number }} opts
+ * @returns {Promise<Response>}
+ */
+function fetchWithTimeout(url, opts = {}) {
+    const timeoutMs = opts.timeoutMs || 5000;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+    return fetch(url, { ...opts, signal: ctrl.signal })
+        .finally(() => clearTimeout(timer));
+}
+
+/** 判断 AbortError 是否来自超时 */
+function isAbortError(err) {
+    return err && (err.name === 'AbortError' || (err.message && err.message.includes('abort')));
+}
+
+/** P1-6: 显示 / 隐藏加载骨架态（替换默认的 "0/32 假死"） */
+function showLoading(message) {
+    const countEl = document.getElementById('collected-count');
+    const emptyEl = document.getElementById('empty-state');
+    const carousel = document.getElementById('drink-carousel');
+    const stats = document.getElementById('stats-board');
+    if (countEl) countEl.textContent = '…';
+    // 在 empty-state 区域显示加载提示
+    if (emptyEl) {
+        emptyEl.style.display = 'block';
+        emptyEl.innerHTML = `
+            <p>🍸 ${message || '正在加载酒馆数据…'}</p>
+            <p style="margin-top:16px; color:#888; font-size:13px;">
+                网络状况不好时会稍等一下，不用手动刷新～
+            </p>
+        `;
+    }
+    if (carousel) carousel.style.opacity = '0.35';
+    if (stats) stats.style.opacity = '0.35';
+}
+function hideLoading() {
+    const emptyEl = document.getElementById('empty-state');
+    const carousel = document.getElementById('drink-carousel');
+    const stats = document.getElementById('stats-board');
+    if (emptyEl) {
+        emptyEl.innerHTML = `
+            <p>酒馆还空着...</p>
+            <p style="margin-top:16px; color:#666;">
+                把链接分享给朋友<br>
+                让他们为你调一杯酒吧
+            </p>
+        `;
+        emptyEl.style.display = 'none';
+    }
+    if (carousel) carousel.style.opacity = '';
+    if (stats) stats.style.opacity = '';
+}
+
+/**
+ * P0-2: 探活后端 —— 带 4 秒超时
+ * - 4 秒内 2xx -> useBackend=true
+ * - 4 秒超时 或 网络错误 -> **乐观保持 true**，让真正的业务接口去试，避免"探活误判→强制走被墙直连"
+ * - 只有明确 4xx/5xx 返回（说明服务端真活着但就是错了）才降级
+ */
 async function checkBackend() {
     try {
-        const res = await fetch('/api/questions', { method: 'HEAD' });
+        const res = await fetchWithTimeout('/api/questions', { method: 'HEAD', timeoutMs: 4000 });
         tavernState.useBackend = res.ok;
     } catch (err) {
-        tavernState.useBackend = false;
+        // 超时 / 网络未达：不清真 useBackend，让下一个真实业务 fetch 继续尝试后端
+        if (isAbortError(err)) {
+            console.warn('checkBackend 超时，仍乐观尝试真实业务接口（不降级直连）');
+            tavernState.useBackend = true;
+        } else {
+            tavernState.useBackend = true; // 其他错误也乐观，因为有后端代理才过墙
+        }
     }
 }
 
@@ -114,12 +187,18 @@ async function loadTavern() {
     }
 
     migrateLegacyData();
+
+    // P1-6: 先显示加载态，避免 0/32 假死让用户以为坏了
+    showLoading('正在唤醒小酒馆…');
+
+    // P0-2: checkBackend 4s 超时 + 乐观策略；即使它"失败"也不拦真实业务接口
     await checkBackend();
     
     const token = getToken();
     if (!token) {
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('entry') === 'true') {
+        const urlParams2 = new URLSearchParams(window.location.search);
+        if (urlParams2.get('entry') === 'true') {
+            hideLoading();
             showLockScreen();
         } else {
             window.location.href = 'index.html';
@@ -131,44 +210,42 @@ async function loadTavern() {
     hideLockScreen();
     setToken(token);
 
-    if (tavernState.useBackend) {
-        try {
-            const res = await fetch(`/api/tavern/${tavernState.token}`);
-            const data = await res.json();
-            
-            if (data.success) {
-                tavernState.drinks = data.data;
-                tavernState.allDrinks = data.all_drinks || [];
-                tavernState.totalRecipes = data.total || 32;
-                tavernState.collectedCount = data.collected_count || 0;
-                applyPreviewMode();
-                renderTavern();
-                return;
-            }
-        } catch (err) {
-            console.warn('后端不可用，使用云端/本地数据');
+    // P0-1: 移除浏览器直连 Supabase 回退路径（那条路在中国被 DNS 墙 30s+）
+    //      只保留"后端代理 → localStorage 兜底"两级。符合硬约束"Remove code that connects to Supabase 前端侧"
+    let loaded = false;
+
+    showLoading('正在拉取酒柜数据…');
+    try {
+        // 真实业务接口再给 10 秒（后端 Supabase 查询可能稍慢，但经过代理不经过墙）
+        const res = await fetchWithTimeout(`/api/tavern/${tavernState.token}`, { timeoutMs: 10000 });
+        const data = await res.json();
+        
+        if (data.success) {
+            tavernState.drinks = data.data;
+            tavernState.allDrinks = data.all_drinks || [];
+            tavernState.totalRecipes = data.total || 32;
+            tavernState.collectedCount = data.collected_count || 0;
+            applyPreviewMode();
+            hideLoading();
+            renderTavern();
+            loaded = true;
+            return;
+        } else {
+            console.warn('后端返回 success=false:', data.error);
+            showToast(`后端出了小状况：${data.error || '未知错误'}，正在用本地缓存`, '⚠️');
+        }
+    } catch (err) {
+        if (isAbortError(err)) {
+            console.warn('/api/tavern 超时（超过 10 秒），使用本地缓存');
+            showToast('网络较慢，已切换显示本地缓存酒柜 🔁', '⏱️');
+        } else {
+            console.warn('后端接口异常，使用本地缓存:', err);
+            showToast('无法连接到小酒馆服务器，显示本地数据 🔁', '⚠️');
         }
     }
 
-    if (initCloud()) {
-        try {
-            await syncLocalDrinksToCloud(tavernState.token);
-            const cloudDrinks = await getCloudDrinks(tavernState.token);
-            if (cloudDrinks) {
-                const localDrinks = JSON.parse(localStorage.getItem('gaoyidian_drinks') || '[]');
-                const localIds = new Set(localDrinks.map(d => d.id));
-                for (const cd of cloudDrinks) {
-                    if (!localIds.has(cd.id)) {
-                        localDrinks.push(cd);
-                    }
-                }
-                localStorage.setItem('gaoyidian_drinks', JSON.stringify(localDrinks));
-            }
-        } catch (err) {
-            console.warn('云端同步失败，使用本地数据:', err);
-        }
-    }
-
+    // P0-1: 不再 initCloud / syncLocalDrinksToCloud / getCloudDrinks（浏览器直连 Supabase）
+    // 直接用 localStorage 兜底 —— 与项目记忆硬约束一致："Remove code that connects to Supabase 前端侧"
     const allDrinks = JSON.parse(localStorage.getItem('gaoyidian_drinks') || '[]');
     const userDrinks = allDrinks.filter(d => d.owner_token === tavernState.token);
     
@@ -184,7 +261,7 @@ async function loadTavern() {
         if (collected) {
             return {
                 recipe_id: r.id,
-                drink_id: collected.id,
+                drink_id: collected.drink_id || collected.id,
                 bartender_name: collected.bartender_name,
                 created_at: collected.created_at,
                 drink_name: r.drink_name,
@@ -213,7 +290,13 @@ async function loadTavern() {
     tavernState.allDrinks = userDrinks;
 
     applyPreviewMode();
+    hideLoading();
     renderTavern();
+
+    if (!loaded && userDrinks.length === 0) {
+        // 兜底也没数据的最后提示
+        showToast('暂时没调出酒记录，先去找人调一杯吧 🍸', '💡');
+    }
 }
 
 function applyPreviewMode() {
@@ -536,57 +619,108 @@ function formatDate(dateStr) {
 }
 
 async function openDrinkDetail(drinkId) {
-    if (tavernState.useBackend) {
-        try {
-            const res = await fetch(`/api/tavern/${tavernState.token}/detail/${drinkId}`);
-            const data = await res.json();
-            
-            if (data.success) {
-                tavernState.currentDrink = data.data;
-                renderModal(data.data);
-                document.getElementById('drink-modal').classList.add('active');
-                return;
-            }
-        } catch (err) {
-            console.warn('后端加载失败，使用本地数据');
+    // P0-3: 详情请求带超时；不再依赖 useBackend 变量，直接走后端（超时/错误自动回本地）
+    let needFallback = true;
+    try {
+        const res = await fetchWithTimeout(
+            `/api/tavern/${tavernState.token}/detail/${encodeURIComponent(drinkId)}`,
+            { timeoutMs: 8000 }
+        );
+        const data = await res.json();
+        if (data.success) {
+            tavernState.currentDrink = data.data;
+            renderModal(data.data);
+            document.getElementById('drink-modal').classList.add('active');
+            needFallback = false;
+            return;
+        } else {
+            console.warn('后端详情返回错误:', data.error);
+            showToast(`加载酒详情失败：${data.error || '未知'}，正在重试`, '⚠️');
+        }
+    } catch (err) {
+        if (isAbortError(err)) {
+            console.warn('后端详情超时，回退本地');
+        } else {
+            console.warn('后端详情加载失败，回退本地:', err);
         }
     }
 
+    // 本地兜底 1：按 id 精确匹配 localStorage（老数据存 id=hex，新数据存 drink_id=hex + id 自增数值主键）
     const allDrinks = JSON.parse(localStorage.getItem('gaoyidian_drinks') || '[]');
-    const drink = allDrinks.find(d => d.id === drinkId);
-    
+    const drink = allDrinks.find(d =>
+        d.id === drinkId || d.drink_id === drinkId || String(d.id) === String(drinkId)
+    );
+
     if (drink) {
         const recipe = DRINK_RECIPES.find(r => r.id === drink.recipe_id);
+        const siblings = allDrinks
+            .filter(d => d.recipe_id === drink.recipe_id)
+            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        const bartenders = siblings.map(s => ({
+            drink_id: s.drink_id || s.id,
+            drink_business_id: s.drink_id || String(s.id),
+            bartender_name: s.bartender_name,
+            created_at: s.created_at
+        }));
         const drinkData = {
-            drink_id: drink.id,
+            drink_id: drink.drink_id || drink.id,
+            drink_business_id: drink.drink_id || String(drink.id),
             bartender_name: drink.bartender_name,
             created_at: drink.created_at,
             answers: drink.answers,
             tags: drink.tags,
+            bartenders: bartenders,
             recipe: recipe
         };
         tavernState.currentDrink = drinkData;
         renderModal(drinkData);
         document.getElementById('drink-modal').classList.add('active');
+        needFallback = false;
         return;
     }
 
-    const tavernDrink = tavernState.drinks.find(d => d.drink_id === drinkId);
+    // 本地兜底 2：在 tavernState.drinks（后端返回的聚合卡片）里找
+    const tavernDrink = tavernState.drinks.find(d =>
+        d.drink_id === drinkId || String(d.drink_id) === String(drinkId)
+    );
     if (tavernDrink && tavernDrink.collected) {
         const recipe = DRINK_RECIPES.find(r => r.id === tavernDrink.recipe_id);
         if (recipe) {
+            const siblings = (tavernState.allDrinks || [])
+                .filter(d => d.recipe_id === tavernDrink.recipe_id)
+                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            const bartenders = siblings.length
+                ? siblings.map(s => ({
+                    drink_id: s.drink_id || String(s.id),
+                    drink_business_id: s.drink_id || String(s.id),
+                    bartender_name: s.bartender_name,
+                    created_at: s.created_at
+                }))
+                : [{
+                    drink_id: tavernDrink.drink_id,
+                    drink_business_id: tavernDrink.drink_id,
+                    bartender_name: tavernDrink.bartender_name,
+                    created_at: tavernDrink.created_at
+                }];
             const drinkData = {
                 drink_id: tavernDrink.drink_id,
+                drink_business_id: tavernDrink.drink_id,
                 bartender_name: tavernDrink.bartender_name,
                 created_at: tavernDrink.created_at,
                 answers: [],
                 tags: [],
+                bartenders: bartenders,
                 recipe: recipe
             };
             tavernState.currentDrink = drinkData;
             renderModal(drinkData);
             document.getElementById('drink-modal').classList.add('active');
+            needFallback = false;
         }
+    }
+
+    if (needFallback) {
+        showToast('找不到这杯酒的详情，可能是旧本地缓存未同步 🙈', '🙈');
     }
 }
 
@@ -595,9 +729,53 @@ function renderModal(drink) {
     document.getElementById('modal-name-en').textContent = recipe.english_name;
     document.getElementById('modal-name-cn').textContent = recipe.drink_name;
     document.getElementById('modal-type').textContent = recipe.drink_type;
-    document.getElementById('modal-bartender').textContent = drink.bartender_name;
-    document.getElementById('modal-date').textContent = formatDate(drink.created_at);
     document.getElementById('modal-story').textContent = recipe.story;
+
+    // 调酒师信息渲染：如果有 bartenders 数组就多行列出（按时间倒序），否则回退到单条显示
+    const infoRoot = document.getElementById('modal-bartender-info');
+    const bartenders = Array.isArray(drink.bartenders) && drink.bartenders.length
+        ? drink.bartenders
+        : [{ bartender_name: drink.bartender_name, created_at: drink.created_at }];
+
+    if (bartenders.length <= 1) {
+        // 只有 1 位的情形：保持原有单行样式，"Created by 名字 · 日期"
+        const bt = bartenders[0] || {};
+        infoRoot.innerHTML =
+            `Created by <strong id="modal-bartender">${bt.bartender_name || '—'}</strong> · <span id="modal-date">${formatDate(bt.created_at) || '—'}</span>`;
+    } else {
+        // 多位的情形：改成多行卡片列表，每行一位调酒师 + 各自时间
+        const rows = bartenders.map((bt, idx) => `
+            <div class="bartender-row" style="
+                display: flex;
+                align-items: baseline;
+                justify-content: space-between;
+                gap: 12px;
+                padding: 10px 14px;
+                margin-top: ${idx === 0 ? '8px' : '6px'};
+                border: 1px solid rgba(232, 184, 109, 0.18);
+                background: rgba(255, 248, 235, 0.04);
+                border-radius: 10px;
+            ">
+                <div style="display:flex;align-items:baseline;gap:8px;min-width:0;">
+                    <span style="font-size:12px;color:#b8a486;letter-spacing:0.5px;white-space:nowrap;">
+                        ${idx === 0 ? '最新 · Created by' : 'Created by'}
+                    </span>
+                    <strong style="color:var(--accent,#e8b86d);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                        ${bt.bartender_name || '—'}
+                    </strong>
+                </div>
+                <span style="font-size:12px;color:#9a8a74;letter-spacing:0.5px;white-space:nowrap;">
+                    ${formatDate(bt.created_at) || '—'}
+                </span>
+            </div>
+        `).join('');
+        infoRoot.innerHTML = `
+            <div style="font-size:12px;color:#9a8a74;letter-spacing:1.5px;margin-bottom:2px;">
+                共 ${bartenders.length} 位调酒师调出了这款酒
+            </div>
+            ${rows}
+        `;
+    }
 
     const previewEl = document.getElementById('modal-drink-preview');
     const animConfig = recipe.animation_config || null;
@@ -876,7 +1054,7 @@ function openBartendersModal() {
         const item = document.createElement('div');
         item.className = 'ledger-item';
         
-        if (d.id && !d.id.startsWith('preview_')) {
+        if (d.id && !String(d.id).startsWith('preview_')) {
             item.classList.add('clickable');
             item.onclick = () => {
                 closeStatsModalInstant();
@@ -986,7 +1164,7 @@ function openFlavorModal() {
         row.className = 'ranking-item';
         
         const inst = allDrinks.find(d => d.recipe_id === item.recipe.id);
-        if (inst && inst.id && !inst.id.startsWith('preview_')) {
+        if (inst && inst.id && !String(inst.id).startsWith('preview_')) {
             row.classList.add('clickable');
             row.onclick = () => {
                 closeStatsModalInstant();
